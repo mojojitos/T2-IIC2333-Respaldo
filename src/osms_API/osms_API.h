@@ -3,7 +3,7 @@
 
 // funciones generales
 
-// void os_mount(char* memory_path);
+void os_mount(char* memory_path);
 
 // void os_ls_processes();
 
