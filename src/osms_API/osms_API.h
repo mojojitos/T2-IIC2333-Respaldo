@@ -1,6 +1,21 @@
 #pragma once
 #include "../osms_File/osms_File.h"
 
+typedef struct entrada_tabla_PCB {
+    unsigned char estado;
+    unsigned char pid;
+    char nombre_proceso[14];
+    char tabla_archivos[240];
+} Entrada_Tabla_PCB;
+
+typedef struct entrada_tabla_archivos{
+    unsigned char byte_validez;
+    char nombre_archivo[14];
+    unsigned int tamaño_archivo;
+    unsigned int dir_virtual;
+} Entrada_Tabla_Archivos;
+
+
 // funciones generales
 
 void os_mount(char* memory_path);
