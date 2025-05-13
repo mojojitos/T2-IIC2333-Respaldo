@@ -8,9 +8,10 @@ int main(int argc, char const *argv[])
 {
 
     // montar la memoria
-    // os_mount((char *)argv[1]);
+    os_mount((char *)argv[1]);
+    os_ls_processes();
 
-    //Testeando forma de obtener el binario
+/*     //Testeando forma de obtener el binario
     unsigned char byte = 49;
     printf("binary rep. of char byte 49: %#b \n", byte);
 
@@ -29,6 +30,6 @@ int main(int argc, char const *argv[])
 
     // Storing binary in an unsigned character
     unsigned char binary_uchar = 0b11001100;
-    printf("Unsigned character value: %d\n", binary_uchar);
+    printf("Unsigned character value: %d\n", binary_uchar); */
 
 }

@@ -3,8 +3,8 @@
 
 typedef struct entrada_tabla_PCB {
     unsigned char estado;
-    unsigned char pid;
     char nombre_proceso[14];
+    unsigned char pid;
     char tabla_archivos[240];
 } Entrada_Tabla_PCB;
 
@@ -20,7 +20,7 @@ typedef struct entrada_tabla_archivos{
 
 void os_mount(char* memory_path);
 
-// void os_ls_processes();
+void os_ls_processes();
 
 // int os_exists(int process_id, char* file_name);
 
