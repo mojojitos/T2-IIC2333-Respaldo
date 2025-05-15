@@ -22,7 +22,9 @@ void os_mount(char* memory_path);
 
 void os_ls_processes();
 
-// int os_exists(int process_id, char* file_name);
+Entrada_Tabla_PCB* Buscar_proceso(int process_id);
+
+int os_exists(int process_id, char* file_name);
 
 // void os_ls_files(int process_id);
 
