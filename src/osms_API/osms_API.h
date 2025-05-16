@@ -11,7 +11,8 @@ typedef struct entrada_tabla_PCB {
 typedef struct entrada_tabla_archivos{
     unsigned char byte_validez;
     char nombre_archivo[14];
-    unsigned int tamaño_archivo;
+    //unsigned int tamaño_archivo;
+    char tamaño_archivo_bytes[5];
     unsigned int dir_virtual;
 } Entrada_Tabla_Archivos;
 
@@ -26,7 +27,7 @@ Entrada_Tabla_PCB* Buscar_proceso(int process_id);
 
 int os_exists(int process_id, char* file_name);
 
-// void os_ls_files(int process_id);
+void os_ls_files(int process_id);
 
 // void os_frame_bitmap();
 
