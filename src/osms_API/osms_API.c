@@ -69,7 +69,7 @@ void os_ls_processes(){
     for(int i=0; i<entradas_tabla_PCB; i++){
         Entrada_Tabla_PCB* entrada_actual = &TablaPCB[i];
         if(entrada_actual->estado == 1){
-            printf("%d %s\n", entrada_actual->pid, entrada_actual->nombre_proceso);
+            printf("    %d %s\n", entrada_actual->pid, entrada_actual->nombre_proceso);
         }
     } 
 }
@@ -114,7 +114,7 @@ int os_exists(int process_id, char* file_name){
 }
 
 
-int32_t read_little_endian_5bytes(const char* data) {
+int32_t leer_5Bytes_little_endian(const char* data) {
     int32_t result = 0;
 
     // Iterate over the 5 bytes, least significant first (little-endian).
@@ -162,7 +162,7 @@ void os_ls_files(int process_id){
                     if(valido == 1){
                         //printf("    [Test] Archivo válido (%d) encontrado!\n", valido);
                         Entrada_Tabla_Archivos* entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[j*sizeof(Entrada_Tabla_Archivos)];
-                        int tamaño_int = read_little_endian_5bytes(entrada_archivo_actual->tamaño_archivo_bytes);
+                        int tamaño_int = leer_5Bytes_little_endian(entrada_archivo_actual->tamaño_archivo_bytes);
                         //printf("    DirV: (0x%x) Nombre: (%s), tamaño : (%d)B\n", entrada_archivo_actual->dir_virtual, entrada_archivo_actual->nombre_archivo, tamaño_int);
                         // Manejar lo de dirV, sus bits, cosa de extraer VPN y offset
                         // Aplico lo de las mascaras
@@ -173,7 +173,7 @@ void os_ls_files(int process_id){
                         unsigned int VPN = (entrada_archivo_actual->dir_virtual >> 5) & mascara_VPN;
                         unsigned int offset = (entrada_archivo_actual->dir_virtual >> 17) & mascara_offset;
                         //printf("    bit basura: (0x%x), VPN (0x%x), offset (0x%x)\n", primeros_5, VPN, offset);
-                        printf("0x%x %d 0x%x %s\n", VPN, tamaño_int, entrada_archivo_actual->dir_virtual, entrada_archivo_actual->nombre_archivo);
+                        printf("    0x%x %d 0x%x %s\n", VPN, tamaño_int, entrada_archivo_actual->dir_virtual, entrada_archivo_actual->nombre_archivo);
                     }  
                 }
                 break;
