@@ -46,6 +46,13 @@ int tamaño_entrada_pagina_invertida = 3;
 int tamaño_bitmap_bytes = 8192;
 int tamaño_bitmap_bits = 65536;
 
+
+
+
+
+
+
+
 // funciones generales
 void os_mount(char* memory_path){
     printf("[Test Command]: OS Mount\n");
@@ -213,6 +220,52 @@ void os_frame_bitmap(){
     printf("USADOS %d\n", n_ocupados);
     printf("LIBRES %d\n", n_libres);
 }
-// // funciones procesos
 
+void print_entrada_PCB(Entrada_Tabla_PCB* entrada){
+    printf("        [Test] Estado: (%d), Nombre: (%s) Id_proceso: (%d), Tabla archivos: (%s)\n", entrada->estado, entrada->nombre_proceso, entrada->pid, entrada->tabla_archivos);
+}
+// // funciones procesos
+int os_start_process(int process_id, char* process_name){
+    printf("[Test Command]: OS start process\n");
+    
+    fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
+    Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
+    fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
+    int insertado = 0;
+    for(int i=0; i<entradas_tabla_PCB; i++){
+        Entrada_Tabla_PCB* entrada_PCB_actual = &TablaPCB[i];
+        printf("    [Test] [%d] Valido: (%d)\n", i, entrada_PCB_actual->estado);
+        if(entrada_PCB_actual->estado == 0){
+            insertado++;
+            printf("        [Test] He encontrado primera entrada libre\n");
+            entrada_PCB_actual->estado = 1;
+            strcpy(entrada_PCB_actual->nombre_proceso, process_name);
+            entrada_PCB_actual->pid = process_id;
+            // Voy a setear lo de la tabla de archivos en 0 por si las moscas
+            memset(entrada_PCB_actual->tabla_archivos, 0, sizeof(entrada_PCB_actual->tabla_archivos));
+            print_entrada_PCB(entrada_PCB_actual);
+            break;
+        }
+    }
+    if(insertado != 0){
+        printf("\n Escribiendo cambios en la memoria:\n");
+        fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
+        fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
+
+/*         printf("\n Revisando la memoria ahora:\n");
+        fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
+        fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
+        for(int i=0; i<entradas_tabla_PCB; i++){
+            Entrada_Tabla_PCB* entrada_PCB_actual = &TablaPCB[i];
+            printf("    [Test] [%d] Valido: (%d)\n", i, entrada_PCB_actual->estado);
+            if(entrada_PCB_actual->estado == 1){
+                print_entrada_PCB(entrada_PCB_actual);
+            }
+        } */
+        printf("[Test] Retornando 0\n");
+        return 0;
+    }
+    printf("[Test] Retornando -1\n");
+    return -1; //TODO: Agregar el return 0 si está bien
+}
 // // funciones archivos

@@ -11,10 +11,12 @@ int main(int argc, char const *argv[])
     os_mount((char *)argv[1]);
     os_ls_processes();
 
-    os_exists(1, "cat.jpg");
-    os_ls_files(1);
+    os_exists(6, "cat.jpg");
+    os_ls_files(6);
 
     os_frame_bitmap();
+
+    os_start_process(2, "sup_proceso");
 
 /*     //Testeando forma de obtener el binario
     unsigned char byte = 49;

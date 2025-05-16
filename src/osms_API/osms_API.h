@@ -33,7 +33,7 @@ void os_frame_bitmap();
 
 // // funciones procesos
 
-// int os_start_process(int process_id, char* process_name);
+int os_start_process(int process_id, char* process_name);
 
 // int os_finish_process(int process_id);
 
