@@ -14,6 +14,8 @@ int main(int argc, char const *argv[])
     os_exists(1, "cat.jpg");
     os_ls_files(1);
 
+    os_frame_bitmap();
+
 /*     //Testeando forma de obtener el binario
     unsigned char byte = 49;
     printf("binary rep. of char byte 49: %#b \n", byte);

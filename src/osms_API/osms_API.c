@@ -42,6 +42,9 @@ int entradas_tabla_archivos = 10;
 int tamaño_entrada_archivo = 24;
 // Datos Tabla de páginas invertida
 int tamaño_entrada_pagina_invertida = 3;
+// Datos bitmap
+int tamaño_bitmap_bytes = 8192;
+int tamaño_bitmap_bits = 65536;
 
 // funciones generales
 void os_mount(char* memory_path){
@@ -178,6 +181,37 @@ void os_ls_files(int process_id){
         }
     }
     //printf("No lo he encontrado\n");
+}
+
+void os_frame_bitmap(){
+    //TODO: Aquí aplica lo de little endian???
+    // Ver bien cómo hacer esto, si guardo variable o no
+    // y cómo esa bariable queda guardada
+    printf("[Test Command]: OS frame bitmap\n");
+    unsigned char bitmap[tamaño_bitmap_bytes];
+
+    fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
+    fread(bitmap, 1, tamaño_bitmap_bytes, memoria_montada);
+
+    int n_libres=0;
+    int n_ocupados=0;
+
+    for (int byte_actual = 0; byte_actual < tamaño_bitmap_bytes; byte_actual++) {
+        for (int bit_actual = 0; bit_actual < 8; bit_actual++) {
+            // Extrae cada bit del byte_actual
+            int valor_bit = (bitmap[byte_actual] >> bit_actual) & 1;
+            if(valor_bit == 1){
+                //printf("[Test] Byte %d, Bit %d: %d\n", byte_actual, bit_actual, valor_bit);
+                n_ocupados++;
+            }
+            //printf("[Test] Byte %d, Bit %d: %d\n", byte_actual, bit_actual, valor_bit);
+            else{
+                n_libres++;
+            }
+        }
+    }
+    printf("USADOS %d\n", n_ocupados);
+    printf("LIBRES %d\n", n_libres);
 }
 // // funciones procesos
 
