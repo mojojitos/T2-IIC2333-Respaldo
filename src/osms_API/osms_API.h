@@ -16,6 +16,13 @@ typedef struct entrada_tabla_archivos{
     unsigned int dir_virtual;
 } Entrada_Tabla_Archivos;
 
+typedef struct entrada_TIP{
+    unsigned int bits;
+} Entrada_TIP;
+
+typedef struct entrada_Bitmap{
+    unsigned char bit;
+} Entrada_Bitmap;
 
 // funciones generales
 
@@ -35,9 +42,11 @@ void os_frame_bitmap();
 
 int os_start_process(int process_id, char* process_name);
 
-// int os_finish_process(int process_id);
+int liberar_memoria_TIP(int id_proceso, unsigned int VPN, unsigned int offset); // ver si queda o no
 
-// int os_rename process(int process id, char* new name);
+int os_finish_process(int process_id); // Arreglar
+
+int os_rename_process(int process_id, char* new_name);
 
 // // funciones archivos
 

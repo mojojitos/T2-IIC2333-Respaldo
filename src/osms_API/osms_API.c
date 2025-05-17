@@ -33,6 +33,7 @@ int inicio_tabla_PCB = 0; // Desde 0B
 int inicio_tabla_paginas_inv = 8192; // 8KB
 int inicio_frame_bitmap = 204800;// 8192 + 3*2^16= 8192 + 196608 = 204800; // 200KB
 int inicio_tabla_frames = 212992;// 204800 + 2^13 = 204800 + 8192 = 212992; // 212992 = 208KB
+
 // Datos Tablas PCB
 int tamaño_entrada_PCB = 256;
 int entradas_tabla_PCB = 32;
@@ -41,7 +42,8 @@ int pos_tabla_archivos = 240;
 int entradas_tabla_archivos = 10;
 int tamaño_entrada_archivo = 24;
 // Datos Tabla de páginas invertida
-int tamaño_entrada_pagina_invertida = 3;
+int tamaño_entrada_pagina_invertida = 3; // Bytes
+int entradas_TIP = 65536;
 // Datos bitmap
 int tamaño_bitmap_bytes = 8192;
 int tamaño_bitmap_bits = 65536;
@@ -173,12 +175,13 @@ void os_ls_files(int process_id){
                         //printf("    DirV: (0x%x) Nombre: (%s), tamaño : (%d)B\n", entrada_archivo_actual->dir_virtual, entrada_archivo_actual->nombre_archivo, tamaño_int);
                         // Manejar lo de dirV, sus bits, cosa de extraer VPN y offset
                         // Aplico lo de las mascaras
-                        unsigned int mascara_primeros_5 = 0x1F;
+                        
+                        //unsigned int mascara_primeros_5 = 0x1F;
                         unsigned int mascara_VPN = 0XFFF;
-                        unsigned int mascara_offset = 0x7FFF;
-                        unsigned int primeros_5 = entrada_archivo_actual->dir_virtual & mascara_primeros_5;
+                        //unsigned int mascara_offset = 0x7FFF;
+                        //unsigned int primeros_5 = entrada_archivo_actual->dir_virtual & mascara_primeros_5;
                         unsigned int VPN = (entrada_archivo_actual->dir_virtual >> 5) & mascara_VPN;
-                        unsigned int offset = (entrada_archivo_actual->dir_virtual >> 17) & mascara_offset;
+                        //unsigned int offset = (entrada_archivo_actual->dir_virtual >> 17) & mascara_offset;
                         //printf("    bit basura: (0x%x), VPN (0x%x), offset (0x%x)\n", primeros_5, VPN, offset);
                         printf("    0x%x %d 0x%x %s\n", VPN, tamaño_int, entrada_archivo_actual->dir_virtual, entrada_archivo_actual->nombre_archivo);
                     }  
@@ -224,9 +227,32 @@ void os_frame_bitmap(){
 void print_entrada_PCB(Entrada_Tabla_PCB* entrada){
     printf("        [Test] Estado: (%d), Nombre: (%s) Id_proceso: (%d), Tabla archivos: (%s)\n", entrada->estado, entrada->nombre_proceso, entrada->pid, entrada->tabla_archivos);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // // funciones procesos
 int os_start_process(int process_id, char* process_name){
     printf("[Test Command]: OS start process\n");
+
+    int bytes_nombre = strlen(process_name) + 1;
+    printf("[Test] El nombre ingresado tiene %d bytes\n", bytes_nombre);
+    if(bytes_nombre > 14){
+        printf("[Test] No es un largo de nombre permitido, excede los 14 Bytes\n");
+        return -1;
+    }
     
     fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
@@ -267,5 +293,271 @@ int os_start_process(int process_id, char* process_name){
     }
     printf("[Test] Retornando -1\n");
     return -1; //TODO: Agregar el return 0 si está bien
+}
+
+void print_entrada_Archivo_valido(Entrada_Tabla_Archivos* entrada){
+    int tamaño_int = leer_5Bytes_little_endian(entrada->tamaño_archivo_bytes);
+    unsigned int mascara_VPN = 0XFFF;
+    unsigned int mascara_offset = 0x7FFF;
+    unsigned int VPN = (entrada->dir_virtual >> 5) & mascara_VPN;
+    unsigned int offset = (entrada->dir_virtual >> 17) & mascara_offset;
+    printf("    DirV: (0x%x) Tamaño: (%d) VPN: (0x%x) Offset: (0x%x) Nombre: (%s)\n", VPN, tamaño_int, entrada->dir_virtual, offset, entrada->nombre_archivo);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* int liberar_frame_real(int n_frame){
+    // No sé si esto es necesario
+    fseek(memoria_montada, inicio_tabla_frames, SEEK_SET);
+    unsigned char frames[tamaño_bitmap_bits];
+    fread(frames, 1, )
+} */
+
+int liberar_bitmap(int n_frame){
+/*     printf("Buscando el frame %d\n", n_frame);
+    printf("Antes:\n");
+    os_frame_bitmap();
+    // Accedo al bitmap, recorro hasta el frame indicado y lo seteo en 0
+    unsigned char bitmap[tamaño_bitmap_bytes];
+    //Entrada_Bitmap Bitmap[tamaño_bitmap_bits];
+    //TODO: Ver cómo hacer que los cambios impacten la memoria
+    // idea de posible nueva estructura
+    fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
+    fread(bitmap, 1, tamaño_bitmap_bytes, memoria_montada);
+    int bit_actual;
+    for (int byte_actual = 0; byte_actual < tamaño_bitmap_bytes; byte_actual++) {
+        for (int bit_actual = 0; bit_actual < 8; bit_actual++) {
+            int valor_bit = (bitmap[byte_actual] >> bit_actual) & 1;
+            if(bit_actual == n_frame){
+                fseek(memoria_montada, inicio_tabla_PCB+bit_actual, SEEK_SET);
+                fwrite(0, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
+                break;
+            }
+            bit_actual++;
+        }
+    }
+
+    int bit_actual;
+    for (int byte_actual = 0; byte_actual < tamaño_bitmap_bytes; byte_actual++) {
+        for (int bit_actual = 0; bit_actual < 8; bit_actual++) {
+            int valor_bit = (bitmap[byte_actual] >> bit_actual) & 1;
+            if(bit_actual == n_frame){
+                valor_bit = 0;
+
+                break;
+            }
+            bit_actual++;
+        }
+    }
+
+    unsigned char bit;
+    int bit_actual = 0;
+    while(bit_actual != n_frame){
+        fseek(memoria_montada, inicio_frame_bitmap+bit_actual, SEEK_SET);
+        bit_actual++;
+    } */
+    //fread(Bitmap, 1, tamaño_bitmap_bits, memoria_montada);
+
+/*     for(int bit_actual = 0; bit_actual<tamaño_bitmap_bits; bit_actual++){
+        Entrada_Bitmap* entrada_actual = &Bitmap[bit_actual];
+        unsigned int mascara = 0x1;
+        unsigned int bit_valor = (int) entrada_actual->bit & mascara;  
+        //printf("    Bit [%d] valor: (%d)\n", bit_actual, bit_valor);
+        if(bit_actual == n_frame){
+            entrada_actual->bit = 0;
+        }
+    }
+    fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
+    fwrite(Bitmap, sizeof(Entrada_Bitmap), tamaño_bitmap_bits, memoria_montada); */
+/*     printf("Resultado:\n");
+    os_frame_bitmap(); */
+
+
+/*     for (int byte_actual = 0; byte_actual < tamaño_bitmap_bytes; byte_actual++) {
+        for (int bit_actual = 0; bit_actual < 8; bit_actual++) {
+            int valor_bit = (bitmap[byte_actual] >> bit_actual) & 1;
+            if(frame_actual == n_frame){
+                valor_bit = 0;
+                break;
+            }
+            frame_actual++;
+        }
+    } */
+    // TODO: Ver si realmente esto escribe bien el bitmap (corroborar con los tamaños)
+
+/*     fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
+    fwrite(bitmap, sizeof(bitmap), tamaño_bitmap_bytes, memoria_montada);
+    printf("Resultado:\n");
+    os_frame_bitmap(); */
+    return 0;
+    // TODO: Ver posible casos de error
+}
+
+int liberar_memoria_TIP(int id_proceso, unsigned int VPN, unsigned int offset){
+    // Idea de acceder a la TIP, buscar páginas tq coincida id_proceso y VPN y liberar ahí
+    // Setear lectura en inicio de la TIP
+    fseek(memoria_montada, inicio_tabla_paginas_inv, SEEK_SET);
+    Entrada_TIP TablaTIP[entradas_TIP];
+    // Leer la TIP
+    fread(&TablaTIP, sizeof(Entrada_TIP), entradas_TIP, memoria_montada);
+    // Recorrer la TIP
+    for(int i=0; i<entradas_TIP; i++){
+        Entrada_TIP* entrada_actual = &TablaTIP[i];
+        unsigned int mascara_validez = 0x1;
+        unsigned int bit_validez = entrada_actual->bits & mascara_validez;
+        if(bit_validez == 1){
+            //unsigned int mascara_mega_pid = 0x3FF;
+            unsigned int mascara_pid = 0xFF;
+            //unsigned int mega_pid = (entrada_actual->bits >> 1) & mascara_mega_pid;
+            unsigned int pid = (entrada_actual->bits >> 3) & mascara_pid;
+            //unsigned int mascara_mega_VPN = 0x1FFF;
+            unsigned int mascara_VPN = 0x3FF;
+            //unsigned int mega_VPN = (entrada_actual->bits >> 11) & mascara_mega_VPN;
+            unsigned int neo_VPN = (entrada_actual->bits >> 12) & mascara_VPN;
+            //printf("    Frame [%d], validez: (%d), PID: (%d) VPN: (0x%x)\n", i, bit_validez, pid, neo_VPN);
+           
+            if(pid == id_proceso && VPN == neo_VPN){
+                int n_frame = i;
+                printf("    [Test]Actual================\n");
+                printf("        [Test]Frame [%d], validez: (%d), PID: (%d) VPN: (0x%x)\n", i, bit_validez, pid, neo_VPN);
+                // Liberar en frame actual
+                //
+                // Liberar el bitmap según el número de frame
+                liberar_bitmap(n_frame);
+                // Marcar actual como no válido
+                entrada_actual->bits = 0;
+                //memset(entrada_actual->bits, 0, sizeof(entrada_actual->bits));
+                // Ver cómo modificar solo el primer bit como alternativa
+
+                /* fseek(memoria_montada, inicio_tabla_paginas_inv, SEEK_SET);
+                fwrite(TablaTIP, sizeof(Entrada_TIP), entradas_TIP, memoria_montada); */
+                return 0;
+            }
+            // TODO: Ver posibles casos de errores y su flujo
+        }
+    }
+    return 0; // Arreglar eso
+}
+
+int liberar_memoria_proceso(Entrada_Tabla_PCB* PCB_actual){
+    // Recorrer sus archivos obteniendo el VPN y offset
+    char* tabla_archivos = PCB_actual->tabla_archivos;
+    for(int j=0; j<10; j++){
+        char valido = tabla_archivos[j*24];
+        if(valido == 1){
+            Entrada_Tabla_Archivos* entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[j*sizeof(Entrada_Tabla_Archivos)];
+            print_entrada_Archivo_valido(entrada_archivo_actual);
+            //int tamaño_int = leer_5Bytes_little_endian(entrada_archivo_actual->tamaño_archivo_bytes);
+            unsigned int mascara_VPN = 0XFFF;
+            unsigned int mascara_offset = 0x7FFF;
+            unsigned int VPN = (entrada_archivo_actual->dir_virtual >> 5) & mascara_VPN;
+            unsigned int offset = (entrada_archivo_actual->dir_virtual >> 17) & mascara_offset;
+            // Llamado funcion de liberar la TIP
+            int exitoso = liberar_memoria_TIP(PCB_actual->pid, VPN, offset); 
+            if(exitoso != 0){
+                return -1;
+            }
+            // No hago nada más, pues esto se reseteará a 0 cuando en finish_process lo memsetee a 0
+        }  
+    }
+    return 0;
+}
+
+int os_finish_process(int process_id){
+    printf("[Test Command]: OS finish process\n");
+
+    fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
+    Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
+    fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
+    int encontrado = 0;
+    for(int i=0; i<entradas_tabla_PCB; i++){
+        Entrada_Tabla_PCB* entrada_PCB_actual = &TablaPCB[i];
+        if(entrada_PCB_actual->estado == 1){
+            print_entrada_PCB(entrada_PCB_actual);
+        }
+        if(entrada_PCB_actual->estado == 1 && entrada_PCB_actual->pid == process_id){
+            encontrado++;
+            printf("        [Test] He encontrado el proceso buscado\n");
+
+            // Liberación de memoria <-------------Insertar 
+            int exitoso = liberar_memoria_proceso(entrada_PCB_actual);
+            if(exitoso != 0){
+                // TODO: Ver si esto interrumpe las cosas o qué pasa, si es que algo se queda a medias
+                return -1;
+            }
+
+            entrada_PCB_actual->pid = 0;
+            memset(entrada_PCB_actual->tabla_archivos, 0, sizeof(entrada_PCB_actual->tabla_archivos));
+            memset(entrada_PCB_actual->nombre_proceso, 0, sizeof(entrada_PCB_actual->nombre_proceso));
+            entrada_PCB_actual->estado = 0;
+            print_entrada_PCB(entrada_PCB_actual);
+            break;
+        }
+    }
+    if(encontrado != 0){
+        printf("\n Escribiendo cambios en la memoria:\n");
+        fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
+        fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
+
+/*         printf("\n Revisando la memoria ahora:\n");
+        fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
+        fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
+        for(int i=0; i<entradas_tabla_PCB; i++){
+            Entrada_Tabla_PCB* entrada_PCB_actual = &TablaPCB[i];
+            printf("    [Test] [%d] Valido: (%d)\n", i, entrada_PCB_actual->estado);
+            if(entrada_PCB_actual->estado == 1){
+                print_entrada_PCB(entrada_PCB_actual);
+            }
+        } */
+        printf("[Test] Retornando 0\n");
+        return 0;
+    }
+    printf("[Test] Retornando -1\n");
+    return -1; //TODO: Agregar el return 0 si está bien
+}
+
+int os_rename_process(int process_id, char* new_name){
+    printf("[Test Command]: OS rename process\n");
+
+    int bytes_nombre = strlen(new_name) + 1;
+    printf("[Test] El nombre ingresado tiene %d bytes\n", bytes_nombre);
+    if(bytes_nombre > 14){
+        printf("[Test] No es un largo de nombre permitido, excede los 14 Bytes\n");
+        return -1;
+    }
+
+    fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
+    Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
+    fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
+    int encontrado = 0;
+    for(int i=0; i<entradas_tabla_PCB; i++){
+        Entrada_Tabla_PCB* entrada_PCB_actual = &TablaPCB[i];
+        if(entrada_PCB_actual->estado == 1 && entrada_PCB_actual->pid == process_id){
+            encontrado++;
+            strcpy(entrada_PCB_actual->nombre_proceso, new_name);
+            print_entrada_PCB(entrada_PCB_actual);
+            break;
+        }
+    }
+    if(encontrado != 0){
+        printf("\n Escribiendo cambios en la memoria:\n");
+        fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
+        fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
+        printf("[Test] Retornando 0\n");
+        return 0;
+    }
+    printf("[Test] Retornando -1\n");
+    return -1;
 }
 // // funciones archivos

@@ -16,7 +16,12 @@ int main(int argc, char const *argv[])
 
     os_frame_bitmap();
 
-    os_start_process(2, "sup_proceso");
+    //os_start_process(3, "neo_proceso");
+    //os_finish_process(3);
+    //liberar_memoria_TIP(6, 0x396, 10); // Quitar eventualmente esto
+    // (6) VPN: (0x396)
+
+    os_rename_process(3, "test_ren");
 
 /*     //Testeando forma de obtener el binario
     unsigned char byte = 49;
