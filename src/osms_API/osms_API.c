@@ -47,6 +47,9 @@ int entradas_TIP = 65536;
 // Datos bitmap
 int tamaño_bitmap_bytes = 8192;
 int tamaño_bitmap_bits = 65536;
+// Datos Conjunto Frames
+int tamaño_frame = 32768;
+int cantidad_frames = 65536;
 
 
 
@@ -133,18 +136,6 @@ int32_t leer_5Bytes_little_endian(const char* data) {
 
     return result;
 }
-/* 
-void print_address(char addr[4]) {
-    // Cast the char array to an integer pointer to read the address.
-    uintptr_t address = 0;
-
-    // Construct the address assuming little-endian format.
-    for (int i = 0; i < 4; i++) {
-        address |= (unsigned char)addr[i] << (8 * i);
-    }
-
-    printf("Memory address: 0x%08lX\n", (unsigned long)address);
-} */
 
 void os_ls_files(int process_id){
     printf("[Test Command]: OS ls files\n");
@@ -314,104 +305,59 @@ void print_entrada_Archivo_valido(Entrada_Tabla_Archivos* entrada){
 
 
 
-
-
-
-/* int liberar_frame_real(int n_frame){
-    // No sé si esto es necesario
-    fseek(memoria_montada, inicio_tabla_frames, SEEK_SET);
-    unsigned char frames[tamaño_bitmap_bits];
-    fread(frames, 1, )
-} */
-
-int liberar_bitmap(int n_frame){
-/*     printf("Buscando el frame %d\n", n_frame);
-    printf("Antes:\n");
-    os_frame_bitmap();
-    // Accedo al bitmap, recorro hasta el frame indicado y lo seteo en 0
-    unsigned char bitmap[tamaño_bitmap_bytes];
-    //Entrada_Bitmap Bitmap[tamaño_bitmap_bits];
-    //TODO: Ver cómo hacer que los cambios impacten la memoria
-    // idea de posible nueva estructura
+void liberar_frame_bitmap(int n_frame){
     fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
+    unsigned int bitmap[tamaño_bitmap_bytes];
     fread(bitmap, 1, tamaño_bitmap_bytes, memoria_montada);
-    int bit_actual;
-    for (int byte_actual = 0; byte_actual < tamaño_bitmap_bytes; byte_actual++) {
-        for (int bit_actual = 0; bit_actual < 8; bit_actual++) {
-            int valor_bit = (bitmap[byte_actual] >> bit_actual) & 1;
-            if(bit_actual == n_frame){
-                fseek(memoria_montada, inicio_tabla_PCB+bit_actual, SEEK_SET);
-                fwrite(0, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
-                break;
-            }
-            bit_actual++;
-        }
-    }
-
-    int bit_actual;
-    for (int byte_actual = 0; byte_actual < tamaño_bitmap_bytes; byte_actual++) {
-        for (int bit_actual = 0; bit_actual < 8; bit_actual++) {
-            int valor_bit = (bitmap[byte_actual] >> bit_actual) & 1;
-            if(bit_actual == n_frame){
-                valor_bit = 0;
-
-                break;
-            }
-            bit_actual++;
-        }
-    }
-
-    unsigned char bit;
-    int bit_actual = 0;
-    while(bit_actual != n_frame){
-        fseek(memoria_montada, inicio_frame_bitmap+bit_actual, SEEK_SET);
-        bit_actual++;
-    } */
-    //fread(Bitmap, 1, tamaño_bitmap_bits, memoria_montada);
-
-/*     for(int bit_actual = 0; bit_actual<tamaño_bitmap_bits; bit_actual++){
-        Entrada_Bitmap* entrada_actual = &Bitmap[bit_actual];
-        unsigned int mascara = 0x1;
-        unsigned int bit_valor = (int) entrada_actual->bit & mascara;  
-        //printf("    Bit [%d] valor: (%d)\n", bit_actual, bit_valor);
-        if(bit_actual == n_frame){
-            entrada_actual->bit = 0;
-        }
-    }
+    // Encontrar el Byte que contiene el bit de n_frame
+    int byte_index = n_frame / 8;
+    // Obtener el offset del bit dentro del Byte
+    int bit_offset = n_frame % 8;
+    // Aplico los cambios con operaciones bitwise
+    bitmap[byte_index] &= ~(1 << bit_offset);
+    // Ahora reescribo
     fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
-    fwrite(Bitmap, sizeof(Entrada_Bitmap), tamaño_bitmap_bits, memoria_montada); */
-/*     printf("Resultado:\n");
-    os_frame_bitmap(); */
-
-
-/*     for (int byte_actual = 0; byte_actual < tamaño_bitmap_bytes; byte_actual++) {
-        for (int bit_actual = 0; bit_actual < 8; bit_actual++) {
-            int valor_bit = (bitmap[byte_actual] >> bit_actual) & 1;
-            if(frame_actual == n_frame){
-                valor_bit = 0;
-                break;
-            }
-            frame_actual++;
-        }
-    } */
-    // TODO: Ver si realmente esto escribe bien el bitmap (corroborar con los tamaños)
-
-/*     fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
-    fwrite(bitmap, sizeof(bitmap), tamaño_bitmap_bytes, memoria_montada);
-    printf("Resultado:\n");
-    os_frame_bitmap(); */
-    return 0;
-    // TODO: Ver posible casos de error
+    fwrite(bitmap, 1, tamaño_bitmap_bytes, memoria_montada);
 }
 
+/* void printear_frames(){ // actualmente limitado de 0 a 10 por testeo
+    unsigned int* frame_actual = calloc(tamaño_frame, sizeof(unsigned int));
+    for(int i=0; i<10; i++){
+        long posicion_frame = (tamaño_frame*i);
+        fseek(memoria_montada, inicio_tabla_frames + posicion_frame, SEEK_SET);
+        fread(frame_actual, tamaño_frame, 1, memoria_montada);
+        printf("Actual no modificado [%i]: %x\n", i, *frame_actual); 
+    }
+    free(frame_actual);
+} */
+
+void liberar_frame_real(int n_frame){ // Ahora funcional
+    //printear_frames();
+    // Obtengo la posición del frame dentro del conjunto de frames y seteo el puntero de
+    // lectura allí
+    long posicion_frame = (tamaño_frame*n_frame);
+    fseek(memoria_montada, inicio_tabla_frames + posicion_frame, SEEK_SET);
+    // Como quiero reemplazar algo bien grande (y pq se cayó las otras veces) hago calloc
+    // de un "nuevo frame" y seteo todo en 0
+    unsigned int* frame_nuevo_vacio = calloc(tamaño_frame, sizeof(unsigned int));
+    for(int i=0; i<tamaño_frame; i++){
+        frame_nuevo_vacio[i] = 0;
+    }
+    // Escribo y libero
+    fwrite(frame_nuevo_vacio, 1, tamaño_frame, memoria_montada);
+    free(frame_nuevo_vacio);
+    /* unsigned int* frame_actual = calloc(tamaño_frame, sizeof(unsigned int));
+    fseek(memoria_montada, inicio_tabla_frames + posicion_frame, SEEK_SET);
+    fread(frame_actual, tamaño_frame, 1, memoria_montada);
+    printf("Actual nuevo/modificado [%d]: %x\n", n_frame, *frame_actual);
+    free(frame_actual); */
+}
+
+
 int liberar_memoria_TIP(int id_proceso, unsigned int VPN, unsigned int offset){
-    // Idea de acceder a la TIP, buscar páginas tq coincida id_proceso y VPN y liberar ahí
-    // Setear lectura en inicio de la TIP
     fseek(memoria_montada, inicio_tabla_paginas_inv, SEEK_SET);
     Entrada_TIP TablaTIP[entradas_TIP];
-    // Leer la TIP
     fread(&TablaTIP, sizeof(Entrada_TIP), entradas_TIP, memoria_montada);
-    // Recorrer la TIP
     for(int i=0; i<entradas_TIP; i++){
         Entrada_TIP* entrada_actual = &TablaTIP[i];
         unsigned int mascara_validez = 0x1;
@@ -426,22 +372,16 @@ int liberar_memoria_TIP(int id_proceso, unsigned int VPN, unsigned int offset){
             //unsigned int mega_VPN = (entrada_actual->bits >> 11) & mascara_mega_VPN;
             unsigned int neo_VPN = (entrada_actual->bits >> 12) & mascara_VPN;
             //printf("    Frame [%d], validez: (%d), PID: (%d) VPN: (0x%x)\n", i, bit_validez, pid, neo_VPN);
-           
             if(pid == id_proceso && VPN == neo_VPN){
                 int n_frame = i;
-                printf("    [Test]Actual================\n");
-                printf("        [Test]Frame [%d], validez: (%d), PID: (%d) VPN: (0x%x)\n", i, bit_validez, pid, neo_VPN);
-                // Liberar en frame actual
-                //
-                // Liberar el bitmap según el número de frame
-                liberar_bitmap(n_frame);
-                // Marcar actual como no válido
+                //printf("    [Test]Actual================\n");
+                //printf("        [Test]Frame [%d], validez: (%d), PID: (%d) VPN: (0x%x)\n", i, bit_validez, pid, neo_VPN);
+                liberar_frame_bitmap(n_frame);
+                liberar_frame_real(n_frame);
                 entrada_actual->bits = 0;
-                //memset(entrada_actual->bits, 0, sizeof(entrada_actual->bits));
-                // Ver cómo modificar solo el primer bit como alternativa
 
-                /* fseek(memoria_montada, inicio_tabla_paginas_inv, SEEK_SET);
-                fwrite(TablaTIP, sizeof(Entrada_TIP), entradas_TIP, memoria_montada); */
+                fseek(memoria_montada, inicio_tabla_paginas_inv, SEEK_SET);
+                fwrite(TablaTIP, sizeof(Entrada_TIP), entradas_TIP, memoria_montada);
                 return 0;
             }
             // TODO: Ver posibles casos de errores y su flujo
@@ -457,7 +397,7 @@ int liberar_memoria_proceso(Entrada_Tabla_PCB* PCB_actual){
         char valido = tabla_archivos[j*24];
         if(valido == 1){
             Entrada_Tabla_Archivos* entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[j*sizeof(Entrada_Tabla_Archivos)];
-            print_entrada_Archivo_valido(entrada_archivo_actual);
+            //print_entrada_Archivo_valido(entrada_archivo_actual);
             //int tamaño_int = leer_5Bytes_little_endian(entrada_archivo_actual->tamaño_archivo_bytes);
             unsigned int mascara_VPN = 0XFFF;
             unsigned int mascara_offset = 0x7FFF;
@@ -476,32 +416,28 @@ int liberar_memoria_proceso(Entrada_Tabla_PCB* PCB_actual){
 
 int os_finish_process(int process_id){
     printf("[Test Command]: OS finish process\n");
-
     fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
     fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
     int encontrado = 0;
     for(int i=0; i<entradas_tabla_PCB; i++){
         Entrada_Tabla_PCB* entrada_PCB_actual = &TablaPCB[i];
-        if(entrada_PCB_actual->estado == 1){
+        /* if(entrada_PCB_actual->estado == 1){
             print_entrada_PCB(entrada_PCB_actual);
-        }
+        } */
         if(entrada_PCB_actual->estado == 1 && entrada_PCB_actual->pid == process_id){
             encontrado++;
-            printf("        [Test] He encontrado el proceso buscado\n");
-
-            // Liberación de memoria <-------------Insertar 
+            //printf("        [Test] He encontrado el proceso buscado\n");
             int exitoso = liberar_memoria_proceso(entrada_PCB_actual);
             if(exitoso != 0){
                 // TODO: Ver si esto interrumpe las cosas o qué pasa, si es que algo se queda a medias
                 return -1;
             }
-
             entrada_PCB_actual->pid = 0;
             memset(entrada_PCB_actual->tabla_archivos, 0, sizeof(entrada_PCB_actual->tabla_archivos));
             memset(entrada_PCB_actual->nombre_proceso, 0, sizeof(entrada_PCB_actual->nombre_proceso));
             entrada_PCB_actual->estado = 0;
-            print_entrada_PCB(entrada_PCB_actual);
+            //print_entrada_PCB(entrada_PCB_actual);
             break;
         }
     }
@@ -509,17 +445,6 @@ int os_finish_process(int process_id){
         printf("\n Escribiendo cambios en la memoria:\n");
         fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
         fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
-
-/*         printf("\n Revisando la memoria ahora:\n");
-        fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
-        fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
-        for(int i=0; i<entradas_tabla_PCB; i++){
-            Entrada_Tabla_PCB* entrada_PCB_actual = &TablaPCB[i];
-            printf("    [Test] [%d] Valido: (%d)\n", i, entrada_PCB_actual->estado);
-            if(entrada_PCB_actual->estado == 1){
-                print_entrada_PCB(entrada_PCB_actual);
-            }
-        } */
         printf("[Test] Retornando 0\n");
         return 0;
     }
@@ -560,4 +485,5 @@ int os_rename_process(int process_id, char* new_name){
     printf("[Test] Retornando -1\n");
     return -1;
 }
+
 // // funciones archivos

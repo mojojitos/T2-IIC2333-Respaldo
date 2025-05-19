@@ -20,9 +20,9 @@ typedef struct entrada_TIP{
     unsigned int bits;
 } Entrada_TIP;
 
-typedef struct entrada_Bitmap{
-    unsigned char bit;
-} Entrada_Bitmap;
+typedef struct frame_individual{
+    unsigned int bytes;
+} Frame_individual;
 
 // funciones generales
 
@@ -41,6 +41,8 @@ void os_frame_bitmap();
 // // funciones procesos
 
 int os_start_process(int process_id, char* process_name);
+
+void liberar_frame_real(int n_frame);
 
 int liberar_memoria_TIP(int id_proceso, unsigned int VPN, unsigned int offset); // ver si queda o no
 
