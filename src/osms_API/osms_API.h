@@ -42,13 +42,15 @@ void os_frame_bitmap();
 
 int os_start_process(int process_id, char* process_name);
 
-void liberar_frame_real(int n_frame);
-
-int liberar_memoria_TIP(int id_proceso, unsigned int VPN, unsigned int offset); // ver si queda o no
-
 int os_finish_process(int process_id); // Arreglar
 
 int os_rename_process(int process_id, char* new_name);
+
+
+void print_bitmap_completo();
+
+
+
 
 // // funciones archivos
 

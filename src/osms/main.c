@@ -8,20 +8,31 @@ int main(int argc, char const *argv[])
 {
 
     // montar la memoria
-    os_mount((char *)argv[1]);
-    os_ls_processes();
+     os_mount((char *)argv[1]);
+
+/*     os_ls_processes();
 
     os_exists(6, "cat.jpg");
+
     os_ls_files(6);
 
     os_frame_bitmap();
 
-    //os_start_process(3, "neo_proceso");
-    //os_finish_process(3);
-    //liberar_memoria_TIP(6, 0x396, 10); // Quitar eventualmente esto
-    // (6) VPN: (0x396)
+    os_start_process(3, "neo_proceso");
 
     os_rename_process(3, "test_ren");
-    //liberar_frame_real(1);
+
+    os_ls_processes();
+
+    os_frame_bitmap();
+
+    os_finish_process(6);
+
+    os_ls_processes();
+
+    os_frame_bitmap(); */
+
+    print_bitmap_completo();
+    os_frame_bitmap();
 
 }
