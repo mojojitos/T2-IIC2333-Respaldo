@@ -47,6 +47,7 @@ int os_finish_process(int process_id); // Arreglar
 int os_rename_process(int process_id, char* new_name);
 
 
+int liberar_frame_bitmap(int n_frame);
 void print_bitmap_completo();
 
 

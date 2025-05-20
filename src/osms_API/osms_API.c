@@ -362,14 +362,20 @@ int liberar_frame_bitmap(int n_frame){
         printf("[Test error] (Finish Process/Free TIP/Free bitmap) Ha fallado la cantidad de bytes leídos\n");
         return -1;
     }
-    print_bitmap_zone(n_frame);
+
+    //print_bitmap_zone(n_frame);
+
     // Encontrar el Byte que contiene el bit de n_frame
     int byte_index = n_frame / 8;
     // Obtener el offset del bit dentro del Byte
     int bit_offset = n_frame % 8;
     // Aplico los cambios con operaciones bitwise
-    bitmap[byte_index] &= ~(1 << bit_offset);
+    bitmap[byte_index] &= ~(1U << bit_offset);
     // Ahora reescribo
+
+    //printf("Bitmap antes de escribir\n");
+    //print_bitmap_zone(n_frame);
+
     check_puntero = fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
     if(check_puntero != 0){
         printf("[Test error] (Finish Process/Free TIP/Free bitmap) Ha fallado colocar el puntero en la memoria\n");
@@ -380,7 +386,10 @@ int liberar_frame_bitmap(int n_frame){
         printf("[Test error] (Finish Process/Free TIP/Free bitmap) Ha fallado la cantidad de bytes escritos\n");
         return -1;
     }
-    print_bitmap_zone(n_frame);
+
+    //printf("Bitmap después de escribir\n");
+    //print_bitmap_zone(n_frame);
+
     printf("[Test Success]: (Finish Process/Free TIP/Free bitmap) Bit asociado al frame (%d) en el Bitmap liberado\n", n_frame);
     return 0;
 }

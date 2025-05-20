@@ -8,9 +8,9 @@ int main(int argc, char const *argv[])
 {
 
     // montar la memoria
-     os_mount((char *)argv[1]);
+    os_mount((char *)argv[1]);
 
-/*     os_ls_processes();
+    os_ls_processes();
 
     os_exists(6, "cat.jpg");
 
@@ -30,9 +30,10 @@ int main(int argc, char const *argv[])
 
     os_ls_processes();
 
-    os_frame_bitmap(); */
-
-    print_bitmap_completo();
     os_frame_bitmap();
+
+    //liberar_frame_bitmap(65520);
+    //print_bitmap_completo();
+    //os_frame_bitmap();
 
 }
