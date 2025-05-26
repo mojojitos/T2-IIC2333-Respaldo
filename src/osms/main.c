@@ -26,7 +26,7 @@ int main(int argc, char const *argv[])
 
     os_frame_bitmap();
 
-    os_finish_process(6);
+    os_finish_process(1);
 
     os_ls_processes();
 

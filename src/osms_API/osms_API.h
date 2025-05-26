@@ -38,6 +38,7 @@ void os_ls_files(int process_id);
 
 void os_frame_bitmap();
 
+
 // // funciones procesos
 
 int os_start_process(int process_id, char* process_name);

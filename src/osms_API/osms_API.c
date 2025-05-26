@@ -60,17 +60,19 @@ int cantidad_frames = 65536;
 
 // funciones generales
 void os_mount(char* memory_path){
-    printf("[Test Command]: OS Mount\n");
+    //printf("[Test Command]: OS Mount\n");
     memoria_montada_path = memory_path;
     memoria_montada = fopen(memoria_montada_path, "r+b");
     printf(memoria_montada == NULL ? "[Test] Error al abrir el archivo\n" : "[Test] Archivo abierto correctamente\n");
     // Creo que de alternativa a abrir un archivo que quiera leer en binario podría ser rb
     // TODO: Investigar por qué sugiere r+b ---> Creo que es para que no lo traduzca
+    fclose(memoria_montada);
 }
 
 void os_ls_processes(){
-    printf("[Test Command]: OS ls processes\n");
+    //printf("[Test Command]: OS ls processes\n");
     // Leo la memoria por Bytes, para ello coloco el puntero en el inicio de la tabla PCB
+    memoria_montada = fopen(memoria_montada_path, "r+b");
     fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     // Una vez seteado eso, leo y voy guardando en las entradas PCB
     Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
@@ -84,10 +86,12 @@ void os_ls_processes(){
             printf("    %d %s\n", entrada_actual->pid, entrada_actual->nombre_proceso);
         }
     } 
+    fclose(memoria_montada);
 }
 
 int os_exists(int process_id, char* file_name){
-    printf("[Test Command]: OS exists\n");
+    memoria_montada = fopen(memoria_montada_path, "r+b");
+    //printf("[Test Command]: OS exists\n");
     fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
     fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
@@ -112,7 +116,8 @@ int os_exists(int process_id, char* file_name){
                         int condicion = strcmp(nombre, file_name);
                         //printf("    [Test] Resultado de comparación: %d\n", condicion);
                         if(condicion == 0){
-                            printf("[Test] Lo he encontrado\n");
+                            //printf("[Test] Lo he encontrado\n");
+                            fclose(memoria_montada);
                             return 1;
                         }
                     } 
@@ -121,7 +126,8 @@ int os_exists(int process_id, char* file_name){
             }
         }
     }
-    printf("[Test] No lo he encontrado\n");
+    //printf("[Test] No lo he encontrado\n");
+    fclose(memoria_montada);
     return 0;
 }
 
@@ -138,7 +144,8 @@ int32_t leer_5Bytes_little_endian(const char* data) {
 }
 
 void os_ls_files(int process_id){
-    printf("[Test Command]: OS ls files\n");
+    memoria_montada = fopen(memoria_montada_path, "r+b");
+    //printf("[Test Command]: OS ls files\n");
     Entrada_Tabla_PCB* proceso_encontrado = NULL;
     fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
@@ -181,6 +188,7 @@ void os_ls_files(int process_id){
             }
         }
     }
+    fclose(memoria_montada);
     //printf("No lo he encontrado\n");
 }
 
@@ -188,8 +196,9 @@ void os_frame_bitmap(){
     //TODO: Aquí aplica lo de little endian???
     // Ver bien cómo hacer esto, si guardo variable o no
     // y cómo esa bariable queda guardada
-    printf("[Test Command]: OS frame bitmap\n");
-    unsigned char bitmap[tamaño_bitmap_bytes];
+    memoria_montada = fopen(memoria_montada_path, "r+b");
+    //printf("[Test Command]: OS frame bitmap\n");
+    unsigned char* bitmap = calloc(tamaño_bitmap_bytes, sizeof(unsigned int));
 
     fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
     fread(bitmap, 1, tamaño_bitmap_bytes, memoria_montada);
@@ -213,6 +222,8 @@ void os_frame_bitmap(){
     }
     printf("USADOS %d\n", n_ocupados);
     printf("LIBRES %d\n", n_libres);
+    free(bitmap);
+    fclose(memoria_montada);
 }
 
 void print_entrada_PCB(Entrada_Tabla_PCB* entrada){
@@ -236,33 +247,37 @@ void print_entrada_PCB(Entrada_Tabla_PCB* entrada){
 
 // // funciones procesos
 int os_start_process(int process_id, char* process_name){
-    printf("[Test Command]: OS start process\n");
+    memoria_montada = fopen(memoria_montada_path, "r+b");
+    //printf("[Test Command]: OS start process\n");
 
     int bytes_nombre = strlen(process_name) + 1;
-    printf("[Test] El nombre ingresado tiene %d bytes\n", bytes_nombre);
+    //printf("[Test] El nombre ingresado tiene %d bytes\n", bytes_nombre);
     if(bytes_nombre > 14){
         printf("[Test error] (Start Process) No es un largo de nombre permitido, excede los 14 Bytes\n");
+        fclose(memoria_montada);
         return -1;
     }
     
     int check_puntero = fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     if(check_puntero != 0){
         printf("[Test error] (Start Process) Ha fallado colocar el puntero en la memoria\n");
+        fclose(memoria_montada);
         return -1;
     }
     Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
     size_t bytes_leidos_check = fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
     if(bytes_leidos_check != entradas_tabla_PCB){
         printf("[Test error] (Start Process) Ha fallado la cantidad de bits leídos\n");
+        fclose(memoria_montada);
         return -1;
     }
     int insertado = 0;
     for(int i=0; i<entradas_tabla_PCB; i++){
         Entrada_Tabla_PCB* entrada_PCB_actual = &TablaPCB[i];
-        printf("    [Test] [%d] Valido: (%d)\n", i, entrada_PCB_actual->estado);
+        //printf("    [Test] [%d] Valido: (%d)\n", i, entrada_PCB_actual->estado);
         if(entrada_PCB_actual->estado == 0){
             insertado++;
-            printf("        [Test] He encontrado primera entrada libre\n");
+            //printf("        [Test] He encontrado primera entrada libre\n");
             entrada_PCB_actual->estado = 1;
             strcpy(entrada_PCB_actual->nombre_proceso, process_name);
             entrada_PCB_actual->pid = process_id;
@@ -273,15 +288,17 @@ int os_start_process(int process_id, char* process_name){
         }
     }
     if(insertado != 0){
-        printf("\n Escribiendo cambios en la memoria:\n");
+        //printf("\n Escribiendo cambios en la memoria:\n");
         check_puntero = fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
         if(check_puntero != 0){
             printf("[Test error] (Start Process) Ha fallado colocar el puntero en la memoria\n");
+            fclose(memoria_montada);
             return -1;
         }
         size_t bytes_escritos_check = fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
         if(bytes_escritos_check != entradas_tabla_PCB){
             printf("[Test error] (Start Process) Ha fallado en la cantidad de bits escritos\n");
+            fclose(memoria_montada);
             return -1;
         }
 
@@ -295,11 +312,14 @@ int os_start_process(int process_id, char* process_name){
                 print_entrada_PCB(entrada_PCB_actual);
             }
         } */
-        printf("[Test Success]: (Start Process) Proceso pid=(%d) iniciado, retornando 0\n", process_id);
+        //printf("[Test Success]: (Start Process) Proceso pid=(%d) iniciado, retornando 0\n", process_id);
+        fclose(memoria_montada);
         return 0;
     }
     printf("[Test error] (Start Process) No se ha podido iniciar un proceso nuevo\n");
+    fclose(memoria_montada);
     return -1; //TODO: Agregar el return 0 si está bien
+
 }
 
 void print_entrada_Archivo_valido(Entrada_Tabla_Archivos* entrada){
@@ -327,55 +347,76 @@ void print_bitmap_completo(){
 
 void print_bitmap_zone(int n_frame){
     fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
-    unsigned int bitmap[tamaño_bitmap_bytes];
+    unsigned char* bitmap = calloc(tamaño_bitmap_bytes, sizeof(unsigned int));
     fread(bitmap, 1, tamaño_bitmap_bytes, memoria_montada);
-    int min = n_frame-2;
-    if(min<=0){
-        min = 0;
+
+    for (int byte_actual = n_frame/8 -1; byte_actual < n_frame/8 +1; byte_actual++) {
+        for (int bit_actual = 0; bit_actual < 8; bit_actual++) {
+            // Extrae cada bit del byte_actual
+            int valor_bit = (bitmap[byte_actual] >> bit_actual) & 1;
+            int n_bit = byte_actual*8+bit_actual;
+            if(n_bit != n_frame){
+                printf("[Test] [%d] Byte %d, Bit %d: -- (%d)\n", byte_actual*8+bit_actual ,byte_actual, bit_actual, valor_bit);
+            }
+            else{
+                printf("[Test] ** [%d] Byte %d, Bit %d: -- (%d)\n", byte_actual*8+bit_actual ,byte_actual, bit_actual, valor_bit);
+            }
+            
+        }
     }
-    int max = n_frame+2;
-    if(max>=tamaño_bitmap_bits){
-        max = tamaño_bitmap_bits-1;
-    }
-    printf("    Analizando rango de frames: (%d) a (%d), con cambio en (%d)\n", min, max, n_frame);
-    for (int i = min; i < max; ++i) {
-        int byte_index = i / 8;
-        int bit_offset = i % 8;
-        int bit_value = (bitmap[byte_index] >> bit_offset) & 1;
-        printf("        - Bit [%d]: %d\n", i, bit_value);
-    }
+    free(bitmap);
 }
 
 
-
-
-
 int liberar_frame_bitmap(int n_frame){
+    //printf("[Test Command]: OS frame bitmap\n");
+    unsigned char bitmap[tamaño_bitmap_bytes];
+
     int check_puntero = fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
     if(check_puntero != 0){
-        printf("[Test error] (Finish Process/Free TIP/Free bitmap) Ha fallado colocar el puntero en la memoria\n");
+        printf("[Test error] (Finish Process/Free TIP/Free bitmap) Ha fallado colocar puntero en memoria\n");
         return -1;
     }
-    unsigned int bitmap[tamaño_bitmap_bytes];
     size_t bytes_leidos_check = fread(bitmap, 1, tamaño_bitmap_bytes, memoria_montada);
     if(bytes_leidos_check != tamaño_bitmap_bytes){
-        printf("[Test error] (Finish Process/Free TIP/Free bitmap) Ha fallado la cantidad de bytes leídos\n");
+        printf("[Test error] (Finish Process/Free TIP) Ha fallado cantidad de bytes leídos\n");
         return -1;
     }
 
-    //print_bitmap_zone(n_frame);
+    for (int byte_actual = n_frame/8 -1; byte_actual < n_frame/8 +1; byte_actual++) {
+        for (int bit_actual = 0; bit_actual < 8; bit_actual++) {
+            // Extrae cada bit del byte_actual
+            //int valor_bit = (bitmap[byte_actual] >> bit_actual) & 1;
+/*             if(byte_actual*8+bit_actual != n_frame){
+                printf("[Test] [%d] Byte %d, Bit %d: -- (%d)\n", byte_actual*8+bit_actual ,byte_actual, bit_actual, valor_bit);
+            }
+            else{
+                printf("[Test] ** [%d] Byte %d, Bit %d: -- (%d)\n", byte_actual*8+bit_actual ,byte_actual, bit_actual, valor_bit);
+            } */
+            if(byte_actual*8+bit_actual == n_frame){
+                //printf("Modificando\n");
+                bitmap[byte_actual] &= ~(1U << bit_actual); // Setear en 0
+                //bitmap[byte_actual] |= (1U << bit_actual); // Setear en 1
+            }
+        }
+    }
+    //printf("\n");
 
-    // Encontrar el Byte que contiene el bit de n_frame
-    int byte_index = n_frame / 8;
-    // Obtener el offset del bit dentro del Byte
-    int bit_offset = n_frame % 8;
-    // Aplico los cambios con operaciones bitwise
-    bitmap[byte_index] &= ~(1U << bit_offset);
-    // Ahora reescribo
+/*     for (int byte_actual = n_frame/8 -1; byte_actual < n_frame/8 +1; byte_actual++) {
+        for (int bit_actual = 0; bit_actual < 8; bit_actual++) {
+            // Extrae cada bit del byte_actual
+            int valor_bit = (bitmap[byte_actual] >> bit_actual) & 1;
+            if(byte_actual*8+bit_actual != n_frame){
+                printf("[Test] [%d] Byte %d, Bit %d: -- (%d)\n", byte_actual*8+bit_actual ,byte_actual, bit_actual, valor_bit);
+            }
+            else{
+                printf("[Test] ** [%d] Byte %d, Bit %d: -- (%d)\n", byte_actual*8+bit_actual ,byte_actual, bit_actual, valor_bit);
+            }
+            //bitmap[byte_actual] = 1;
+        }
+    } */
 
-    //printf("Bitmap antes de escribir\n");
-    //print_bitmap_zone(n_frame);
-
+    //printf("\n");
     check_puntero = fseek(memoria_montada, inicio_frame_bitmap, SEEK_SET);
     if(check_puntero != 0){
         printf("[Test error] (Finish Process/Free TIP/Free bitmap) Ha fallado colocar el puntero en la memoria\n");
@@ -386,13 +427,11 @@ int liberar_frame_bitmap(int n_frame){
         printf("[Test error] (Finish Process/Free TIP/Free bitmap) Ha fallado la cantidad de bytes escritos\n");
         return -1;
     }
-
-    //printf("Bitmap después de escribir\n");
-    //print_bitmap_zone(n_frame);
-
-    printf("[Test Success]: (Finish Process/Free TIP/Free bitmap) Bit asociado al frame (%d) en el Bitmap liberado\n", n_frame);
+    //printf("[Test Success]: (Finish Process/Free TIP/Free bitmap) Bit (%d) en Bitmap liberado\n", n_frame);
     return 0;
+    //print_bitmap_zone(n_frame);
 }
+
 
 /* void printear_frames(){ // actualmente limitado de 0 a 10 por testeo
     unsigned int* frame_actual = calloc(tamaño_frame, sizeof(unsigned int));
@@ -433,7 +472,7 @@ int liberar_frame_real(int n_frame){ // Ahora funcional
     fread(frame_actual, tamaño_frame, 1, memoria_montada);
     printf("Actual nuevo/modificado [%d]: %x\n", n_frame, *frame_actual);
     free(frame_actual); */
-    printf("[Test Success]: (Finish Process/Free TIP/Free frame) Frame (%d) en el Conjunto de Frames liberado\n", n_frame);
+    //printf("[Test Success]: (Finish Process/Free TIP/Free frame) Frame (%d) en el Conjunto de Frames liberado\n", n_frame);
     return 0;
 }
 
@@ -495,7 +534,7 @@ int liberar_memoria_TIP(int id_proceso, unsigned int VPN, unsigned int offset){
             }
         }
     }
-    printf("[Test Success]: (Finish Process/Free TIP) Páginas-frames asociados a pid=(%d) y VPN=(0x%x) liberados\n", id_proceso, VPN);
+    //printf("[Test Success]: (Finish Process/Free TIP) Páginas-frames asociados a pid=(%d) y VPN=(0x%x) liberados\n", id_proceso, VPN);
     return 0; // Dejo este caso como OK, dado que planteo la lógica de:
     // Dado que la TIP refleja en cada entrada el frame asociado por índice, cada frame
     // solo (asumo/supongo) que puede tener elementos/info de 1 mismo proceso, pero
@@ -525,21 +564,24 @@ int liberar_memoria_proceso(Entrada_Tabla_PCB* PCB_actual){
             }
         }  
     }
-    printf("[Test Success]: (Finish Process) Memoria asociada al proceso pid=(%d) liberada\n", PCB_actual->pid);
+    //printf("[Test Success]: (Finish Process) Memoria asociada al proceso pid=(%d) liberada\n", PCB_actual->pid);
     return 0;
 }
 
 int os_finish_process(int process_id){
-    printf("[Test Command]: OS finish process\n");
+    memoria_montada = fopen(memoria_montada_path, "r+b");
+    //printf("[Test Command]: OS finish process\n");
     int check_puntero = fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     if(check_puntero != 0){
         printf("[Test error] (Finish Process) Ha fallado colocar el puntero en la memoria\n");
+        fclose(memoria_montada);
         return -1;
     }
     Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
     size_t bytes_leidos_check = fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
     if(bytes_leidos_check != entradas_tabla_PCB){
         printf("[Test error] (Finish Process) Ha fallado cantidad de bytes leídos\n");
+        fclose(memoria_montada);
         return -1;
     }
     int encontrado = 0;
@@ -554,6 +596,7 @@ int os_finish_process(int process_id){
             int exitoso = liberar_memoria_proceso(entrada_PCB_actual);
             if(exitoso != 0){
                 printf("[Test error] (Finish Process) Ha ocurrido un error al liberar la memoria\n");
+                fclose(memoria_montada);
                 return -1;
             }
             entrada_PCB_actual->pid = 0;
@@ -565,21 +608,25 @@ int os_finish_process(int process_id){
         }
     }
     if(encontrado != 0){
-        printf("\n Escribiendo cambios en la memoria:\n");
+        //printf("\n Escribiendo cambios en la memoria:\n");
         check_puntero = fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
         if(check_puntero != 0){
             printf("[Test error] (Finish process) Ha fallado colocar el puntero en la memoria\n");
+            fclose(memoria_montada);
             return -1;
         }
         size_t bytes_escritos_check = fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
         if(bytes_escritos_check != entradas_tabla_PCB){
             printf("[Test error] (Finish Process) Ha fallado cantidad de bytes escritos\n");
+            fclose(memoria_montada);
             return -1;
         }
-        printf("[Test Success]: (Finish Process) Se ha liberado proceso pid=(%d)\n", process_id);
+        //printf("[Test Success]: (Finish Process) Se ha liberado proceso pid=(%d)\n", process_id);
+        fclose(memoria_montada);
         return 0;
     }
     printf("[Test error] (Finish Process) No se ha encontrado un proceso con ese id\n");
+    fclose(memoria_montada);
     return -1; //TODO: Agregar el return 0 si está bien
 }
 
@@ -589,24 +636,28 @@ int os_finish_process(int process_id){
 
 
 int os_rename_process(int process_id, char* new_name){
-    printf("[Test Command]: OS rename process\n");
+    memoria_montada = fopen(memoria_montada_path, "r+b");
+    //printf("[Test Command]: OS rename process\n");
 
     int bytes_nombre = strlen(new_name) + 1;
     //printf("[Test] El nombre ingresado tiene %d bytes\n", bytes_nombre);
     if(bytes_nombre > 14){
         printf("[Test] (Rename Process) No es un largo de nombre permitido, excede los 14 Bytes\n");
+        fclose(memoria_montada);
         return -1;
     }
 
     int check_puntero = fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     if(check_puntero != 0){
         printf("[Test error] (Rename Process) Ha fallado colocar el puntero en la memoria\n");
+        fclose(memoria_montada);
         return -1;
     }
     Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
     size_t bytes_leidos_check = fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
     if(bytes_leidos_check != entradas_tabla_PCB){
         printf("[Test error] (Rename Process) Ha fallado cantidad de bytes leídos\n");
+        fclose(memoria_montada);
         return -1;
     }
     int encontrado = 0;
@@ -624,17 +675,21 @@ int os_rename_process(int process_id, char* new_name){
         check_puntero = fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
         if(check_puntero != 0){
             printf("[Test error] (Rename Process) Ha fallado colocar el puntero en la memoria\n");
+            fclose(memoria_montada);
             return -1;
         }
         size_t bytes_escritos_check = fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
         if(bytes_escritos_check != entradas_tabla_PCB){
             printf("[Test error] (Rename Process) Ha fallado cantidad de bytes escritos\n");
+            fclose(memoria_montada);
             return -1;
         }
-        printf("[Test Success]: (Rename Process) Se ha modificado el nombre del proceso pid=(%d) a (%s)\n", process_id, new_name);
+        //printf("[Test Success]: (Rename Process) Se ha modificado el nombre del proceso pid=(%d) a (%s)\n", process_id, new_name);
+        fclose(memoria_montada);
         return 0;
     }
     printf("[Test error] (Rename Process) No se ha encontrado un proceso con ese id\n");
+    fclose(memoria_montada);
     return -1;
 }
 
