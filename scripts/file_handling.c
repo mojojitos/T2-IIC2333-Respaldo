@@ -55,7 +55,6 @@ int main(int argc, char const *argv[]){
     }
 
     os_ls_processes();
-    os_unmount();
 
     return 0;
 }

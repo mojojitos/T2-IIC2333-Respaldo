@@ -70,6 +70,5 @@ int main(int argc, char const *argv[]) {
     printf("\n=== Archivos por proceso ===\n");
     os_ls_files(pid);
 
-    os_unmount();
     return 0;
 }

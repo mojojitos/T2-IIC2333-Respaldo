@@ -47,7 +47,6 @@ int main(int argc, char const *argv[]){
     printf("[FRAG] Lectura completa. Revisa 'fragmentado_copiado.txt'\n");
     printf("[FRAG] Puedes ahora usar 'xxd memoria.bin | less' y buscar el bitmap (offset 0x32000)\n");
 
-    os_unmount();
 
     return 0;
 }

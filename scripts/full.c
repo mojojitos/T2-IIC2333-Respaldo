@@ -68,6 +68,5 @@ int main(int argc, char const *argv[]){
     printf("\n== Bitmap de frames ==\n");
     os_frame_bitmap();
 
-    os_unmount();
     return 0;
 }

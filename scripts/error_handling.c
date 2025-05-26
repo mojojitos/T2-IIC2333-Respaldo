@@ -47,8 +47,6 @@ int main(int argc, char const *argv[]){
 
     // Terminar proceso válido
     os_finish_process(10);
-
-    os_unmount();
-
+    
     return 0;
 }

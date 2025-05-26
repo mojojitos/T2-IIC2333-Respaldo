@@ -16,13 +16,13 @@ int main(int argc, char const *argv[]){
 
     osrmsFile* f1 = os_open(1, "a.txt", 'w');
     if (!f1) { printf("Error abriendo a.txt para escritura\n"); return 1; }
-    int written1 = os_write_file(f1, "memoria/touched/archivos/symbol.txt");
+    int written1 = os_write_file(f1, "memoria/touched/archivos/homero.txt");
     printf("Proceso 1 escribió %d bytes en a.txt\n", written1);
     os_close(f1);
 
     osrmsFile* f2 = os_open(2, "b.txt", 'w');
     if (!f2) { printf("Error abriendo b.txt para escritura\n"); return 1; }
-    int written2 = os_write_file(f2, "memoria/touched/archivos/.txt");
+    int written2 = os_write_file(f2, "memoria/touched/archivos/homero.txt");
     printf("Proceso 2 escribió %d bytes en b.txt\n", written2);
     os_close(f2);
 
@@ -43,6 +43,5 @@ int main(int argc, char const *argv[]){
 
     os_frame_bitmap();
 
-    os_unmount();
     return 0;
 }

@@ -71,7 +71,6 @@ void os_delete_file(int process_id, char* file_name);
 
 void os_close(osrmsFile* file_desc);
 
-void os_unmount();
 
 // BONUS
 

@@ -38,6 +38,5 @@ int main(int argc, char const *argv[]){
         os_close(f);
     }
 
-    os_unmount();
     return 0;
 }

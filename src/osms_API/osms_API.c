@@ -912,10 +912,6 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
             memset(vpn_usadas, 0, sizeof(vpn_usadas));
             memset(offset_usado, 0, sizeof(offset_usado));
             // printf("Tabla de archivos para PID %d antes de asignar:\n", process_id);
-            for (int j = 0; j < 10; j++) {
-                char valido = tabla_archivos[j*24];
-                // printf("  Slot %d: valido=%d\n", j, valido);
-            }
             Entrada_Tabla_Archivos* entrada_archivo_vpn = NULL;
             for(int i = 0; i < 10; i++) {
                 entrada_archivo_vpn = (Entrada_Tabla_Archivos*) &tabla_archivos[i*tamaño_entrada_archivo];
@@ -1226,15 +1222,5 @@ void os_delete_file(int process_id, char* file_name) {
 void os_close(osrmsFile* file_desc) {
     if (file_desc != NULL) {
         free(file_desc);
-    }
-}
-
-void os_unmount() {
-    if (memoria_montada != NULL) {
-        fclose(memoria_montada);
-        memoria_montada = NULL;
-        // printf("[Test Success]: (Unmount) Memoria desmontada correctamente\n");
-    // } else {
-        // printf("[Test error]: (Unmount) No hay memoria montada para desmontar\n");
     }
 }

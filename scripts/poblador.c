@@ -45,6 +45,5 @@ int main(int argc, char const *argv[]) {
     }
 
     printf("=== [FIN POBLAR MEMORIA] ===\n");
-    os_unmount();
     return 0;
 }
