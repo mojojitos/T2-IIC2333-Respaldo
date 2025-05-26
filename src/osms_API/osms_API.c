@@ -986,8 +986,8 @@ int busqueda_pfn(int pid, unsigned int vpn) {
         fread(entrada, 1, 3, memoria_montada);
 
         unsigned char bit_validez = entrada[0] & 0x01;
-        unsigned int pid_entrada = ((entrada[0] >> 3) & 0x1F) | ((entrada[1] & 0x1F) << 5);
-        unsigned int vpn_entrada = ((entrada[1] >> 1) & 0x7F) | (entrada[2] << 7);
+        unsigned int pid_entrada = ((entrada[0] >> 1) & 0x7F) | ((entrada[1] & 0x07) << 7);
+        unsigned int vpn_entrada = ((entrada[1] >> 3) & 0x1F) | (entrada[2] << 5);
 
         if (bit_validez == 1 && pid_entrada == pid && vpn_entrada == vpn) {
             return pfn;
@@ -1066,11 +1066,12 @@ int asignar_pagina(int pid, int vpn) {
             pfn = i;
 
             unsigned char entrada[3] = {0};
-            entrada[0] |= 0x01;
-            entrada[0] |= ((pid & 0x3FF) << 3);           
-            entrada[1] |= ((pid & 0x3FF) >> 5) & 0x1F;    
-            entrada[1] |= ((vpn & 0x1FFF) << 1) & 0xFE;   
-            entrada[2] = (vpn >> 7) & 0xFF;             
+            unsigned int pid_mask = pid & 0x3FF;   // 10 bits
+            unsigned int vpn_mask = vpn & 0x1FFF;  // 13 bits
+
+            entrada[0] = (0x01) | ((pid_mask & 0x7F) << 1);
+            entrada[1] = ((pid_mask >> 7) & 0x07) | ((vpn_mask & 0x1F) << 3);
+            entrada[2] = (vpn_mask >> 5) & 0xFF;
 
             long tabla_offset = inicio_tabla_paginas_inv + (pfn * 3);
             fseek(memoria_montada, tabla_offset, SEEK_SET);
