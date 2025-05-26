@@ -3,61 +3,51 @@
 #include <string.h>
 #include "../osms_API/osms_API.h"
 
-void crear_archivo(const char* path, const char* contenido) {
+void crear_archivo(const char* path, const char* contenido, int repeticiones) {
     FILE* f = fopen(path, "w");
     if (f) {
-        fputs(contenido, f);
+        for (int i = 0; i < repeticiones; i++) {
+            fputs(contenido, f);
+        }
         fclose(f);
     }
 }
 
-int main() {
-    os_mount("memoria.bin");
-    printf("=== [TEST FRAGMENTACIÓN] ===\n");
+int main(int argc, char const *argv[]) {
+    if (argc < 2) {
+        printf("Uso: %s <ruta_memoria>\n", argv[0]);
+        return 1;
+    }
+    os_mount((char *)argv[1]);
+    printf("=== [POBLAR MEMORIA] ===\n");
 
-    printf("[1] Fragmentando memoria con archivos pequeños...\n");
-
+    // Crear archivos pequeños
     for (int i = 0; i < 10; i++) {
         char nombre_archivo[64];
         char nombre_logico[64];
         sprintf(nombre_archivo, "tiny_%d.txt", i);
         sprintf(nombre_logico, "file_%d.txt", i);
-        crear_archivo(nombre_archivo, "soy un filler\n");
+        crear_archivo(nombre_archivo, "pequeño\n", 1);
 
         osrmsFile* f = os_open(0, nombre_logico, 'w');
-        int escritos = os_write_file(f, nombre_archivo);
-        printf("    ↳ %s: %d bytes escritos\n", nombre_logico, escritos);
+        os_write_file(f, nombre_archivo);
         os_close(f);
     }
 
-    printf("[2] Generando archivo grande para forzar fragmentación...\n");
+    // Crear archivos grandes
+    for (int i = 0; i < 3; i++) {
+        char nombre_archivo[64];
+        char nombre_logico[64];
+        sprintf(nombre_archivo, "grande_%d.txt", i);
+        sprintf(nombre_logico, "bigfile_%d.txt", i);
+        crear_archivo(nombre_archivo, "linea grande para poblar memoria...\n", 200);
 
-    FILE* g = fopen("grande.txt", "w");
-    for (int i = 0; i < 100; i++) {
-        fprintf(g, "Línea larga #%d: este contenido llenará muchas páginas.\n", i);
+        osrmsFile* f = os_open(0, nombre_logico, 'w');
+        os_write_file(f, nombre_archivo);
+        os_close(f);
     }
-    fclose(g);
 
-    osrmsFile* big = os_open(0, "fragmentado.txt", 'w');
-    int bytes_escritos = os_write_file(big, "grande.txt");
-    printf("    ↳ Se escribieron %d bytes en 'fragmentado.txt'\n", bytes_escritos);
-
-
-    printf("[3] Leyendo archivo fragmentado desde memoria...\n");
-    os_read_file(big, "copia_fragmentada.txt");
-    os_close(big);
-
-
-    printf("[4] Comparando archivo copiado con original...\n");
-    int cmp = system("diff grande.txt copia_fragmentada.txt");
-    if (cmp == 0)
-        printf("Archivos son idénticos.\n");
-    else
-        printf("Archivos son distintos.\n");
-
-    printf("[5] Bitmap de frames (se esperaría que haya huecos):\n");
-   
-
-    printf("=== [FIN TEST FRAGMENTACIÓN] ===\n");
+    printf("=== [FIN POBLAR MEMORIA] ===\n");
+    os_unmount();
     return 0;
 }

@@ -671,7 +671,7 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
                             nombre[14] = '\0';
                             int nombre_correcto = strcmp(nombre, file_name);
                             if(nombre_correcto == 0){
-                                entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[ii*sizeof(Entrada_Tabla_Archivos)];
+                                entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[ii * tamaño_entrada_archivo];
                                 break;
                             }
                         }
@@ -696,9 +696,14 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
             unsigned int offset_usado[cant_paginas];
             memset(vpn_usadas, 0, sizeof(vpn_usadas));
             memset(offset_usado, 0, sizeof(offset_usado));
+            printf("Tabla de archivos para PID %d antes de asignar:\n", process_id);
+            for (int j = 0; j < 10; j++) {
+                char valido = tabla_archivos[j*24];
+                printf("  Slot %d: valido=%d\n", j, valido);
+            }
             Entrada_Tabla_Archivos* entrada_archivo_vpn = NULL;
             for(int i = 0; i < 10; i++) {
-                entrada_archivo_vpn = (Entrada_Tabla_Archivos*) &tabla_archivos[i*sizeof(Entrada_Tabla_Archivos)];
+                entrada_archivo_vpn = (Entrada_Tabla_Archivos*) &tabla_archivos[i*tamaño_entrada_archivo];
                 if (entrada_archivo_vpn->byte_validez == 1) {
                     unsigned int dir_virtual = entrada_archivo_vpn->dir_virtual;
                     unsigned int VPN = (dir_virtual >> 15) & 0xFFF;
@@ -711,17 +716,18 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
 
                     while (tamano_restante > 0 && pagina_actual < cant_paginas) {
                         vpn_usadas[pagina_actual] = 1;
-                        unsigned int epacio_ocupado = (offset_actual + tamano_restante) ? (tamano_pagina - offset_actual) : tamano_restante;
-                        if (offset_usado[pagina_actual] < offset_actual + epacio_ocupado) {
-                            offset_usado[pagina_actual] = offset_actual + epacio_ocupado;
+                        unsigned int espacio_ocupado = (tamano_restante < (tamano_pagina - offset_actual)) ? tamano_restante : (tamano_pagina - offset_actual);
+                        if (offset_usado[pagina_actual] < offset_actual + espacio_ocupado) {
+                            offset_usado[pagina_actual] = offset_actual + espacio_ocupado;
                         }
-                        tamano_restante -= epacio_ocupado;
+                        tamano_restante -= espacio_ocupado;
                         offset_actual = 0;
                         pagina_actual++;
                     }
                 }
             }
             Entrada_Tabla_Archivos* entrada_archivo = NULL;
+            int asignado = 0;
             for (int ii = 0; ii < cant_paginas; ii++) {
                 if (offset_usado[ii] < tamano_pagina) {
                     return_pointer = calloc(sizeof(1), sizeof(osrmsFile));
@@ -734,21 +740,28 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
                     for(int j = 0; j < 10; j++) {
                         char valido = tabla_archivos[j*24];
                         if(valido == 0){
-                            entrada_archivo = (Entrada_Tabla_Archivos*) &tabla_archivos[j*sizeof(Entrada_Tabla_Archivos)];
+                             printf("Intentando asignar archivo '%s' en slot %d, VPN=%d, offset=%d\n", file_name, j, ii, offset_usado[ii]);
+                            entrada_archivo = (Entrada_Tabla_Archivos*) &tabla_archivos[j*tamaño_entrada_archivo];
                             entrada_archivo->byte_validez = 0x01;
                             strncpy(entrada_archivo->nombre_archivo, file_name, 14);
                             escribir_5Bytes_little_endian(entrada_archivo->tamaño_archivo_bytes, return_pointer->tamaño_archivo);
                             entrada_archivo->dir_virtual = return_pointer->dir_virtual;
+                            asignado = 1;
                             break;
                         }
                     }
                     fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
                     fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
                     break;
-                    }
                 }
             }
+            if (asignado == 0) {
+                printf("[Test error] (OS Open) No se pudo asignar un espacio para el archivo\n");
+                free(return_pointer);
+                return NULL;
+            }
         }
+    }
     return return_pointer;
 }
 
@@ -873,7 +886,7 @@ int os_write_file(osrmsFile* file_desc, char* src) {
         if (TablaPCB[i].estado == 1 && TablaPCB[i].pid == file_desc->pid) {
             char* tabla_archivos = TablaPCB[i].tabla_archivos;
             for (int j = 0; j < 10; j++) {
-                Entrada_Tabla_Archivos* entrada = (Entrada_Tabla_Archivos*)&tabla_archivos[j * sizeof(Entrada_Tabla_Archivos)];
+                Entrada_Tabla_Archivos* entrada = (Entrada_Tabla_Archivos*)&tabla_archivos[j * tamaño_entrada_archivo];
                 if (entrada->byte_validez == 1 && strncmp(entrada->nombre_archivo, file_desc->nombre_archivo, 14) == 0) {
                     entrada_actualizada = entrada;
                     break;
@@ -928,7 +941,7 @@ void os_delete_file(int process_id, char* file_name) {
         if (TablaPCB[i].estado == 1 && TablaPCB[i].pid == process_id) {
             char* tabla_archivos = TablaPCB[i].tabla_archivos;
             for (int j = 0; j < 10; j++) {
-                Entrada_Tabla_Archivos* entrada = (Entrada_Tabla_Archivos*)&tabla_archivos[j * sizeof(Entrada_Tabla_Archivos)];
+                Entrada_Tabla_Archivos* entrada = (Entrada_Tabla_Archivos*)&tabla_archivos[j * tamaño_entrada_archivo];
                 if (entrada->byte_validez == 1 && strncmp(entrada->nombre_archivo, file_name, 14) == 0) {
                     entrada_borrar = entrada;
                     virt_addr = entrada->dir_virtual;
