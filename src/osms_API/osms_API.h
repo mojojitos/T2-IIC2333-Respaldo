@@ -55,15 +55,15 @@ void print_bitmap_completo();
 
 // // funciones archivos
 
-// OsmsFile* os_open(int process_id, char* file_name, char mode);
+osrmsFile* os_open(int process_id, char* file_name, char mode);
 
-// int os_read_file(osrmsFile* file desc, char* dest);
+int os_read_file(osrmsFile* file_desc, char* dest);
 
-// int os_write_file(osrmsFile* file desc, char* src);
+int os_write_file(osrmsFile* file_desc, char* src);
 
-// void os_delete_file(int process id, char* file name);
+void os_delete_file(int process_id, char* file_name);
 
-// void os_close(OsmsFile* file_desc);
+void os_close(osrmsFile* file_desc);
 
 // BONUS
 

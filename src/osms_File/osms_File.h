@@ -10,4 +10,5 @@ typedef struct osms_file {
     // TODO: Convendrá colocar la dir virtual como int/char?
     unsigned int dir_virtual;
     char modo_abierto;
-} OsmsFile;
+} osrmsFile; // Correcion de tipeo 
+
