@@ -1,11 +1,13 @@
-#include <stdio.h>	// FILE, fopen, fclose, etc.
-#include <stdlib.h> // malloc, calloc, free, etc
-#include <string.h> //para strcmp
-#include <stdbool.h> // bool, true, false
+#include <stdio.h>	
+#include <stdlib.h> 
+#include <string.h> 
+#include <stdbool.h> 
 #include "../osms_API/osms_API.h"
 
-int main(int argc, char const *argv[])
-{
+// con memformat.bin clean
+// requiere archivo local entrada.txt
+
+int main(int argc, char const *argv[]){
     os_mount((char *)argv[1]);
 
     // Crear muchos procesos
@@ -22,7 +24,7 @@ int main(int argc, char const *argv[])
             sprintf(nombre_archivo, "file%d_%d.txt", pid, j);
             osrmsFile* f = os_open(pid, nombre_archivo, 'w');
             if (f) {
-                os_write_file(f, "entrada.txt"); // Usa el mismo archivo de entrada para todos
+                os_write_file(f, "entrada.txt"); // Mismo archivo de entrada para todos
                 os_close(f);
             }
         }
@@ -53,6 +55,7 @@ int main(int argc, char const *argv[])
     }
 
     os_ls_processes();
+    os_unmount();
 
     return 0;
 }

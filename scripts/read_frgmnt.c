@@ -1,17 +1,16 @@
-#include <stdio.h>
+#include <stdio.h>	
+#include <stdlib.h> 
 #include <string.h>
+#include <stdbool.h> 
 #include "../osms_API/osms_API.h"
 
-int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        printf("Uso: %s <ruta_memoria>\n", argv[0]);
-        return 1;
-    }
-    os_mount(argv[1]);
+// ejecutar con memformat.bin luego de ejecutar pob_fragmnt.c
 
-    int pid = 1; // El mismo PID usado para poblar la memoria
+int main(int argc, char const *argv[]) {
+    os_mount((char *)argv[1]);
 
-    // Lista de archivos a leer (ajusta según los archivos que realmente existan)
+    int pid = 1;
+
     const char* archivos[] = {
         "file_0.txt",
         "file_2.txt",

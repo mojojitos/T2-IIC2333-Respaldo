@@ -649,11 +649,11 @@ void escribir_5Bytes_little_endian(char* buffer, unsigned int valor) {
 }
 
 osrmsFile* os_open(int process_id, char* file_name, char mode) {
-    printf("[Test Command]: OS open file\n");
+    // printf("[Test Command]: OS open file\n");
     osrmsFile* return_pointer = NULL;
     int process_pointer = fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     if(process_pointer == 0){
-        printf("Proceso encontrado, procede a abrir archivo\n");
+        // printf("Proceso encontrado, procede a abrir archivo\n");
         Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
         fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
         Entrada_Tabla_Archivos* entrada_archivo_actual = NULL;
@@ -661,7 +661,7 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
         for(int i=0; i<entradas_tabla_PCB; i++){
             Entrada_Tabla_PCB* entrada_actual = &TablaPCB[i];
             if(entrada_actual->estado == 1){
-                if(entrada_actual->pid == process_id){ // Proceso encontrado
+                if(entrada_actual->pid == process_id){ 
                     tabla_archivos = entrada_actual->tabla_archivos;
                     for(int ii=0; ii<10; ii++){
                         char valido = tabla_archivos[ii*24];
@@ -691,15 +691,14 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
             return_pointer->modo_abierto = mode;
             return_pointer->pid = process_id;
         } else if (mode == 'w' && entrada_archivo_actual == NULL) {
-            // Buscar primer espacio libre en tabla de archivos, puede ser en una misma entrada que otro archivo
             unsigned char vpn_usadas[cant_paginas];
             unsigned int offset_usado[cant_paginas];
             memset(vpn_usadas, 0, sizeof(vpn_usadas));
             memset(offset_usado, 0, sizeof(offset_usado));
-            printf("Tabla de archivos para PID %d antes de asignar:\n", process_id);
+            // printf("Tabla de archivos para PID %d antes de asignar:\n", process_id);
             for (int j = 0; j < 10; j++) {
                 char valido = tabla_archivos[j*24];
-                printf("  Slot %d: valido=%d\n", j, valido);
+                // printf("  Slot %d: valido=%d\n", j, valido);
             }
             Entrada_Tabla_Archivos* entrada_archivo_vpn = NULL;
             for(int i = 0; i < 10; i++) {
@@ -740,7 +739,7 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
                     for(int j = 0; j < 10; j++) {
                         char valido = tabla_archivos[j*24];
                         if(valido == 0){
-                             printf("Intentando asignar archivo '%s' en slot %d, VPN=%d, offset=%d\n", file_name, j, ii, offset_usado[ii]);
+                            // printf("Intentando asignar archivo '%s' en slot %d, VPN=%d, offset=%d\n", file_name, j, ii, offset_usado[ii]);
                             entrada_archivo = (Entrada_Tabla_Archivos*) &tabla_archivos[j*tamaño_entrada_archivo];
                             entrada_archivo->byte_validez = 0x01;
                             strncpy(entrada_archivo->nombre_archivo, file_name, 14);
@@ -756,7 +755,7 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
                 }
             }
             if (asignado == 0) {
-                printf("[Test error] (OS Open) No se pudo asignar un espacio para el archivo\n");
+                // printf("[Test error] (OS Open) No se pudo asignar un espacio para el archivo\n");
                 free(return_pointer);
                 return NULL;
             }
@@ -792,7 +791,7 @@ int os_read_file(osrmsFile* file_desc, char* dest) {
     }
     FILE* archivo_salida = fopen(dest, "wb");
     if (!archivo_salida) {
-        return -1; // Error al abrir el archivo de salida
+        return -1;
     }
 
     unsigned int VPN = (file_desc->dir_virtual >> 15) & 0XFFF;
@@ -817,7 +816,6 @@ int os_read_file(osrmsFile* file_desc, char* dest) {
         fread(buffer, 1, bytes_a_leer, memoria_montada);
         fwrite(buffer, 1, bytes_a_leer, archivo_salida);
 
-        // Actualizar punteros y contadores
         size_restante -= bytes_a_leer;
         bytes_leidos += bytes_a_leer;
         VPN++;
@@ -859,17 +857,17 @@ int asignar_pagina(int pid, int vpn) {
             break;
         }
     }
-    printf("[DEBUG] PID %d - VPN %d → PFN %d\n", pid, vpn, pfn);
+    // printf("[DEBUG] PID %d - VPN %d → PFN %d\n", pid, vpn, pfn);
     return pfn;
 }
 
 int os_write_file(osrmsFile* file_desc, char* src) {
     if (!file_desc || file_desc->byte_validez != 0x01) return -1;
 
-    printf("[Test Command]: OS write file con ruta: %s\n", src);
+    // printf("[Test Command]: OS write file con ruta: %s\n", src);
     FILE* archivo_origen = fopen(src, "rb");
     if (!archivo_origen){
-        perror("[ERROR] fopen falló");
+        // perror("[ERROR] fopen falló");
         return -1;
     };
 
@@ -997,8 +995,8 @@ void os_unmount() {
     if (memoria_montada != NULL) {
         fclose(memoria_montada);
         memoria_montada = NULL;
-        printf("[Test Success]: (Unmount) Memoria desmontada correctamente\n");
-    } else {
-        printf("[Test error]: (Unmount) No hay memoria montada para desmontar\n");
+        // printf("[Test Success]: (Unmount) Memoria desmontada correctamente\n");
+    // } else {
+        // printf("[Test error]: (Unmount) No hay memoria montada para desmontar\n");
     }
 }

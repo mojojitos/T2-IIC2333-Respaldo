@@ -1,9 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdio.h>	
+#include <stdlib.h> 
 #include <string.h>
+#include <stdbool.h> 
 #include "../osms_API/osms_API.h"
 
-// Crea un archivo local de texto con contenido repetido
+// con memformat.bin clean
+
+// Crear un archivo local de texto con contenido repetido
 void crear_archivo_local(const char* path, const char* contenido, int repeticiones) {
     FILE* f = fopen(path, "w");
     if (f) {
@@ -15,13 +18,9 @@ void crear_archivo_local(const char* path, const char* contenido, int repeticion
 }
 
 int main(int argc, char const *argv[]) {
-    if (argc < 2) {
-        printf("Uso: %s <ruta_memoria>\n", argv[0]);
-        return 1;
-    }
     os_mount((char *)argv[1]);
 
-    int pid = 1; // Usa un PID libre
+    int pid = 1; // Debe ser PID libre
     if (os_start_process(pid, "poblador") != 0) {
         printf("No se pudo crear el proceso %d\n", pid);
         os_unmount();

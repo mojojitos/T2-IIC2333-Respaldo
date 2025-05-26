@@ -1,7 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdio.h>	
+#include <stdlib.h> 
 #include <string.h>
+#include <stdbool.h> 
 #include "../osms_API/osms_API.h"
+
+// con memformat.bin clean
 
 void crear_archivo(const char* path, const char* contenido, int repeticiones) {
     FILE* f = fopen(path, "w");
@@ -14,14 +17,9 @@ void crear_archivo(const char* path, const char* contenido, int repeticiones) {
 }
 
 int main(int argc, char const *argv[]) {
-    if (argc < 2) {
-        printf("Uso: %s <ruta_memoria>\n", argv[0]);
-        return 1;
-    }
     os_mount((char *)argv[1]);
     printf("=== [POBLAR MEMORIA] ===\n");
 
-    // Crear archivos pequeños
     for (int i = 0; i < 10; i++) {
         char nombre_archivo[64];
         char nombre_logico[64];
@@ -34,7 +32,6 @@ int main(int argc, char const *argv[]) {
         os_close(f);
     }
 
-    // Crear archivos grandes
     for (int i = 0; i < 3; i++) {
         char nombre_archivo[64];
         char nombre_logico[64];

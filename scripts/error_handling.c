@@ -1,11 +1,12 @@
-#include <stdio.h>	// FILE, fopen, fclose, etc.
-#include <stdlib.h> // malloc, calloc, free, etc
-#include <string.h> //para strcmp
-#include <stdbool.h> // bool, true, false
+#include <stdio.h>	
+#include <stdlib.h> 
+#include <string.h> 
+#include <stdbool.h> 
 #include "../osms_API/osms_API.h"
 
-int main(int argc, char const *argv[])
-{
+// con memformat.bin clean
+
+int main(int argc, char const *argv[]){
     os_mount((char *)argv[1]);
 
     // Intentar abrir archivo en proceso inexistente
@@ -17,15 +18,15 @@ int main(int argc, char const *argv[])
     osrmsFile* f2 = os_open(10, "a.txt", 'w');
     if (!f2) printf("ERROR: No se pudo crear archivo\n");
 
-    // Intentar abrir el mismo archivo en modo 'w' (debe fallar)
+    // Intentar abrir el mismo archivo en modo 'w'
     osrmsFile* f3 = os_open(10, "a.txt", 'w');
     if (!f3) printf("OK: No se puede crear dos veces el mismo archivo\n");
 
-    // Escribir archivo inexistente (puntero NULL)
+    // Escribir archivo inexistente 
     int res = os_write_file(NULL, "entrada.txt");
     if (res == -1) printf("OK: No se puede escribir en archivo NULL\n");
 
-    // Leer archivo inexistente (puntero NULL)
+    // Leer archivo inexistente 
     res = os_read_file(NULL, "salida.txt");
     if (res == -1) printf("OK: No se puede leer archivo NULL\n");
 
@@ -46,6 +47,8 @@ int main(int argc, char const *argv[])
 
     // Terminar proceso válido
     os_finish_process(10);
+
+    os_unmount();
 
     return 0;
 }
