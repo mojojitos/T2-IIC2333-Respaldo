@@ -862,6 +862,10 @@ void escribir_5Bytes_little_endian(char* buffer, unsigned int valor) {
 
 osrmsFile* os_open(int process_id, char* file_name, char mode) {
     // printf("[Test Command]: OS open file\n");
+    memoria_montada = fopen(memoria_montada_path, "r+b");
+    if (memoria_montada == NULL) {
+        return NULL;
+    }
     osrmsFile* return_pointer = NULL;
     int process_pointer = fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     if(process_pointer == 0){
@@ -969,10 +973,12 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
             if (asignado == 0) {
                 // printf("[Test error] (OS Open) No se pudo asignar un espacio para el archivo\n");
                 free(return_pointer);
+                fclose(memoria_montada);
                 return NULL;
             }
         }
     }
+    fclose(memoria_montada);
     return return_pointer;
 }
 
@@ -995,14 +1001,20 @@ int busqueda_pfn(int pid, unsigned int vpn) {
 }
 
 int os_read_file(osrmsFile* file_desc, char* dest) {
+    memoria_montada = fopen(memoria_montada_path, "r+b");
+    if (memoria_montada == NULL) {
+        return -1;
+    }
     // lee archivo por file_desc y crea una copia en el archivo de la ruta dest
     // retorna cantidad de bytes leidos
     // nota: el arhivo puede estar en mas de un frame
     if (file_desc == NULL || file_desc->byte_validez != 0x01) {
+        fclose(memoria_montada);
         return -1;
     }
     FILE* archivo_salida = fopen(dest, "wb");
     if (!archivo_salida) {
+        fclose(memoria_montada);
         return -1;
     }
 
@@ -1015,6 +1027,7 @@ int os_read_file(osrmsFile* file_desc, char* dest) {
         int pfn = busqueda_pfn(file_desc->pid, VPN); 
         if (pfn == -1) {
             fclose(archivo_salida);
+            fclose(memoria_montada);
             return -1;
         }
         unsigned int dir_fisica = (pfn * tamano_pagina) + offset + inicio_tabla_frames; 
@@ -1035,6 +1048,7 @@ int os_read_file(osrmsFile* file_desc, char* dest) {
     }
 
     fclose(archivo_salida);
+    fclose(memoria_montada);
     return bytes_leidos;
 }
 
@@ -1074,12 +1088,17 @@ int asignar_pagina(int pid, int vpn) {
 }
 
 int os_write_file(osrmsFile* file_desc, char* src) {
+    memoria_montada = fopen(memoria_montada_path, "r+b");
+    if (memoria_montada == NULL) {
+        return -1;
+    }
     if (!file_desc || file_desc->byte_validez != 0x01) return -1;
 
     // printf("[Test Command]: OS write file con ruta: %s\n", src);
     FILE* archivo_origen = fopen(src, "rb");
     if (!archivo_origen){
         // perror("[ERROR] fopen falló");
+        fclose(memoria_montada);
         return -1;
     };
 
@@ -1107,6 +1126,7 @@ int os_write_file(osrmsFile* file_desc, char* src) {
     }
     if (!entrada_actualizada) {
         fclose(archivo_origen);
+        fclose(memoria_montada);
         return -1;
     }
 
@@ -1137,10 +1157,15 @@ int os_write_file(osrmsFile* file_desc, char* src) {
     fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
 
+    fclose(memoria_montada);
     return bytes_escritos;
 }
 
 void os_delete_file(int process_id, char* file_name) {
+    memoria_montada = fopen(memoria_montada_path, "r+b");
+    if (memoria_montada == NULL) {
+        return;
+    }
     fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
     fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
@@ -1195,6 +1220,7 @@ void os_delete_file(int process_id, char* file_name) {
         fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
 
     }
+    fclose(memoria_montada);
 }
 
 void os_close(osrmsFile* file_desc) {

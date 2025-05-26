@@ -1,66 +1,72 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdio.h>	
+#include <stdlib.h> 
 #include <string.h>
-#include <stdbool.h>
+#include <stdbool.h> 
 #include "../osms_API/osms_API.h"
 
-// con memformat.txt
+// con memformat.bin clean
+// requiere archivo local entrada.txt
 
 int main(int argc, char const *argv[]){
-
     os_mount((char *)argv[1]);
 
-    os_start_process(1, "proceso1");
-    os_start_process(2, "proceso2");
+    // Crear procesos
+    printf("\n== Creando procesos ==\n");
+    os_start_process(1, "uno");
+    os_start_process(2, "dos");
+    os_start_process(3, "tres");
     os_ls_processes();
 
-    osrmsFile* f1 = os_open(1, "a.txt", 'w');
-    if (!f1) { printf("Error abriendo a.txt para escritura\n"); return 1; }
-    int written1 = os_write_file(f1, "memoria/touched/archivos/symbol.txt");
-    printf("Proceso 1 escribió %d bytes en a.txt\n", written1);
-    os_close(f1);
+    // Renombrar proceso
+    printf("\n== Renombrando proceso 2 ==\n");
+    os_rename_process(2, "segundo");
+    os_ls_processes();
 
-    osrmsFile* f2 = os_open(2, "b.txt", 'w');
-    if (!f2) { printf("Error abriendo b.txt para escritura\n"); return 1; }
-    int written2 = os_write_file(f2, "memoria/touched/archivos/symbol.txt");
-    printf("Proceso 2 escribió %d bytes en b.txt\n", written2);
-    os_close(f2);
-
-    printf("Archivos de proceso 1:\n");
+    // Crear archivos en proceso 1
+    printf("\n== Creando archivos en proceso 1 ==\n");
+    for (int i = 0; i < 3; i++) {
+        char nombre[16];
+        sprintf(nombre, "file_%d.txt", i);
+        osrmsFile* f = os_open(1, nombre, 'w');
+        if (f) {
+            os_write_file(f, "memoria/touched/archivos/spongebob.mp4");
+            os_close(f);
+        }
+    }
     os_ls_files(1);
-    printf("Archivos de proceso 2:\n");
+
+    // Leer archivo de proceso 1
+    printf("\n== Leyendo archivo file_1.txt de proceso 1 ==\n");
+    osrmsFile* f1 = os_open(1, "file_1.txt", 'r');
+    if (f1) {
+        os_read_file(f1, "salida_file_1.txt");
+        os_close(f1);
+    }
+
+    // Borrar archivo de proceso 1
+    printf("\n== Borrando archivo file_0.txt de proceso 1 ==\n");
+    os_delete_file(1, "file_0.txt");
+    os_ls_files(1);
+
+    // Crear y borrar archivos en proceso 2
+    printf("\n== Creando y borrando archivos en proceso 2 ==\n");
+    osrmsFile* f2 = os_open(2, "borrar.txt", 'w');
+    if (f2) {
+        os_write_file(f2, "memoria/touched/archivos/spongebob.mp4");
+        os_close(f2);
+    }
+    os_ls_files(2);
+    os_delete_file(2, "borrar.txt");
     os_ls_files(2);
 
-    osrmsFile* f1r = os_open(1, "a.txt", 'r');
-    if (!f1r) { printf("Error abriendo a.txt para lectura\n"); return 1; }
-    int read1 = os_read_file(f1r, "salida1.txt");
-    printf("Leídos %d bytes de a.txt a salida1.txt\n", read1);
-    os_close(f1r);
-
-    os_delete_file(1, "a.txt");
-    printf("Archivos de proceso 1 tras borrar a.txt:\n");
-    os_ls_files(1);
-
-    os_frame_bitmap();
-
-    //os_start_process(3, "neo_proceso");
-
-    //os_rename_process(3, "test_ren");
-
+    // Terminar proceso 3
+    printf("\n== Terminando proceso 3 ==\n");
+    os_finish_process(3);
     os_ls_processes();
 
+    // Mostrar bitmap de frames
+    printf("\n== Bitmap de frames ==\n");
     os_frame_bitmap();
 
-    os_finish_process(1);
-
-    os_ls_processes();
-
-    os_frame_bitmap();
-
-    //liberar_frame_bitmap(65520);
-    //print_bitmap_completo();
-    //os_frame_bitmap();
-
-    os_unmount();
     return 0;
 }
