@@ -5,7 +5,7 @@
 #include "../osms_API/osms_API.h"
 
 // con memformat.bin clean
-// requiere archivo local entrada.txt
+// requiere archivo local entrada.txt (placeholder para otro archivo, puede cambiar ruta)
 
 int main(int argc, char const *argv[]){
     os_mount((char *)argv[1]);
