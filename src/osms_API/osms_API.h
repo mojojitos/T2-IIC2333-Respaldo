@@ -49,7 +49,12 @@ int os_rename_process(int process_id, char* new_name);
 
 
 int liberar_frame_bitmap(int n_frame);
+
+
+
 void print_bitmap_completo();
+
+int see_process_frames(int process_id);
 
 
 

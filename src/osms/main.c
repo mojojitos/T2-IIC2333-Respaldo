@@ -18,9 +18,9 @@ int main(int argc, char const *argv[])
 
     os_frame_bitmap();
 
-    os_start_process(3, "neo_proceso");
+    //os_start_process(3, "neo_proceso");
 
-    os_rename_process(3, "test_ren");
+    //os_rename_process(3, "test_ren");
 
     os_ls_processes();
 
