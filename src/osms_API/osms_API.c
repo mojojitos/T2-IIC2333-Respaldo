@@ -689,6 +689,7 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
             return_pointer->tamaño_archivo = leer_5Bytes_little_endian(entrada_archivo_actual->tamaño_archivo_bytes);
             return_pointer->dir_virtual = entrada_archivo_actual->dir_virtual;
             return_pointer->modo_abierto = mode;
+            return_pointer->pid = process_id;
         } else if (mode == 'w' && entrada_archivo_actual == NULL) {
             // Buscar primer espacio libre en tabla de archivos, puede ser en una misma entrada que otro archivo
             unsigned char vpn_usadas[cant_paginas];
@@ -720,7 +721,7 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
                     }
                 }
             }
-            Entrada_Tabla_Archivos* entrada_archivo_vpn = NULL;
+            Entrada_Tabla_Archivos* entrada_archivo = NULL;
             for (int ii = 0; ii < cant_paginas; ii++) {
                 if (offset_usado[ii] < tamano_pagina) {
                     return_pointer = calloc(sizeof(1), sizeof(osrmsFile));
@@ -729,14 +730,15 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
                     return_pointer->tamaño_archivo = 0;
                     return_pointer->dir_virtual = (ii << 15 | offset_usado[ii]);
                     return_pointer->modo_abierto = mode;
+                    return_pointer->pid = process_id;
                     for(int j = 0; j < 10; j++) {
                         char valido = tabla_archivos[j*24];
                         if(valido == 0){
-                            entrada_archivo_vpn = (Entrada_Tabla_Archivos*) &tabla_archivos[j*sizeof(Entrada_Tabla_Archivos)];
-                            entrada_archivo_vpn->byte_validez = 0x01;
-                            strncpy(entrada_archivo_vpn->nombre_archivo, file_name, 14);
-                            escribir_5Bytes_little_endian(entrada_archivo_vpn->tamaño_archivo_bytes, return_pointer->tamaño_archivo);
-                            entrada_archivo_vpn->dir_virtual = return_pointer->dir_virtual;
+                            entrada_archivo = (Entrada_Tabla_Archivos*) &tabla_archivos[j*sizeof(Entrada_Tabla_Archivos)];
+                            entrada_archivo->byte_validez = 0x01;
+                            strncpy(entrada_archivo->nombre_archivo, file_name, 14);
+                            escribir_5Bytes_little_endian(entrada_archivo->tamaño_archivo_bytes, return_pointer->tamaño_archivo);
+                            entrada_archivo->dir_virtual = return_pointer->dir_virtual;
                             break;
                         }
                     }
@@ -768,34 +770,6 @@ int busqueda_pfn(int pid, unsigned int vpn) {
     return -1;
 }
 
-int obtener_pid(osrmsFile* archivo) {
-    if (!archivo) {
-        return -1;
-    }
-    int pid = -1;
-    int check_puntero = fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
-    Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
-    size_t bytes_leidos_check = fread(&TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
-    if (bytes_leidos_check != entradas_tabla_PCB) {
-        return -1; 
-    }
-    for (int i = 0; i < entradas_tabla_PCB; i++) {
-        if (TablaPCB[i].estado == 1) {
-            char* tabla_archivos = TablaPCB[i].tabla_archivos;
-            for (int j = 0; j < 10; j++) {
-                char valido = tabla_archivos[j * 24];
-                if (valido == 1) {
-                    Entrada_Tabla_Archivos* entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[j * sizeof(Entrada_Tabla_Archivos)];
-                    if (strcmp(entrada_archivo_actual->nombre_archivo, archivo->nombre_archivo) == 0) {
-                        pid = TablaPCB[i].pid;
-                        return pid;
-                    }
-                }
-            }
-        }
-    }
-}
-
 int os_read_file(osrmsFile* file_desc, char* dest) {
     // lee archivo por file_desc y crea una copia en el archivo de la ruta dest
     // retorna cantidad de bytes leidos
@@ -813,9 +787,8 @@ int os_read_file(osrmsFile* file_desc, char* dest) {
     unsigned int size_restante = file_desc->tamaño_archivo;
     unsigned int bytes_leidos = 0;
 
-    int pid = obtener_pid(file_desc);
     while (size_restante > 0) {
-        int pfn = busqueda_pfn(pid, VPN); 
+        int pfn = busqueda_pfn(file_desc->pid, VPN); 
         if (pfn == -1) {
             fclose(archivo_salida);
             return -1;
@@ -873,24 +846,23 @@ int asignar_pagina(int pid, int vpn) {
             break;
         }
     }
-
+    printf("[DEBUG] PID %d - VPN %d → PFN %d\n", pid, vpn, pfn);
     return pfn;
 }
 
 int os_write_file(osrmsFile* file_desc, char* src) {
     if (!file_desc || file_desc->byte_validez != 0x01) return -1;
 
+    printf("[Test Command]: OS write file con ruta: %s\n", src);
     FILE* archivo_origen = fopen(src, "rb");
-    if (!archivo_origen) return -1;
+    if (!archivo_origen){
+        perror("[ERROR] fopen falló");
+        return -1;
+    };
 
     unsigned short vpn = (file_desc->dir_virtual >> 15) & 0xFFF;
     unsigned short offset = file_desc->dir_virtual & 0x7FFF;
     unsigned int bytes_escritos = 0;
-    int pid = obtener_pid(file_desc);
-    if (pid == -1) {
-        fclose(archivo_origen);
-        return -1;
-    }
 
     fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
     Entrada_Tabla_PCB TablaPCB[entradas_tabla_PCB];
@@ -898,7 +870,7 @@ int os_write_file(osrmsFile* file_desc, char* src) {
 
     Entrada_Tabla_Archivos* entrada_actualizada = NULL;
     for (int i = 0; i < entradas_tabla_PCB; i++) {
-        if (TablaPCB[i].estado == 1 && TablaPCB[i].pid == pid) {
+        if (TablaPCB[i].estado == 1 && TablaPCB[i].pid == file_desc->pid) {
             char* tabla_archivos = TablaPCB[i].tabla_archivos;
             for (int j = 0; j < 10; j++) {
                 Entrada_Tabla_Archivos* entrada = (Entrada_Tabla_Archivos*)&tabla_archivos[j * sizeof(Entrada_Tabla_Archivos)];
@@ -920,9 +892,9 @@ int os_write_file(osrmsFile* file_desc, char* src) {
     char buffer[tamano_pagina];
     size_t bytes_leidos;
     while ((bytes_leidos = fread(buffer, 1, tamano_pagina - offset, archivo_origen)) > 0) {
-        int pfn = busqueda_pfn(pid, vpn);
+        int pfn = busqueda_pfn(file_desc->pid, vpn);
         if (pfn == -1) {
-            pfn = asignar_pagina(pid, vpn);
+            pfn = asignar_pagina(file_desc->pid, vpn);
             if (pfn == -1) break;
         }
         unsigned int dir_fisica = (pfn * tamano_pagina) + offset + inicio_tabla_frames;
@@ -967,42 +939,53 @@ void os_delete_file(int process_id, char* file_name) {
         }
         if (entrada_borrar) break;
     }
-    if (!entrada_borrar) return -1;
+    if (entrada_borrar) {
 
-    unsigned short vpn = (virt_addr >> 15) & 0xFFF;
-    unsigned short offset = virt_addr & 0x7FFF;
-    unsigned int restante = size;
-    while (restante > 0) {
-        int pfn = busqueda_pfn(process_id, vpn);
-        if (pfn != -1) {
-            unsigned char invalida[3] = {0};
-            long tabla_offset = inicio_tabla_paginas_inv + (pfn * 3);
-            fseek(memoria_montada, tabla_offset, SEEK_SET);
-            fwrite(invalida, 1, 3, memoria_montada);
-            long bit_offset = inicio_frame_bitmap + (pfn / 8);
-            unsigned char bitmap_byte;
-            fseek(memoria_montada, bit_offset, SEEK_SET);
-            fread(&bitmap_byte, 1, 1, memoria_montada);
-            bitmap_byte &= ~(1 << (pfn % 8));
-            fseek(memoria_montada, bit_offset, SEEK_SET);
-            fwrite(&bitmap_byte, 1, 1, memoria_montada);
+        unsigned short vpn = (virt_addr >> 15) & 0xFFF;
+        unsigned short offset = virt_addr & 0x7FFF;
+        unsigned int restante = size;
+        while (restante > 0) {
+            int pfn = busqueda_pfn(process_id, vpn);
+            if (pfn != -1) {
+                unsigned char invalida[3] = {0};
+                long tabla_offset = inicio_tabla_paginas_inv + (pfn * 3);
+                fseek(memoria_montada, tabla_offset, SEEK_SET);
+                fwrite(invalida, 1, 3, memoria_montada);
+                long bit_offset = inicio_frame_bitmap + (pfn / 8);
+                unsigned char bitmap_byte;
+                fseek(memoria_montada, bit_offset, SEEK_SET);
+                fread(&bitmap_byte, 1, 1, memoria_montada);
+                bitmap_byte &= ~(1 << (pfn % 8));
+                fseek(memoria_montada, bit_offset, SEEK_SET);
+                fwrite(&bitmap_byte, 1, 1, memoria_montada);
+            }
+            unsigned int espacio = tamano_pagina - offset;
+            unsigned int usados = (restante < espacio) ? restante : espacio;
+            restante -= usados;
+            vpn++;
+            offset = 0;
         }
-        unsigned int espacio = tamano_pagina - offset;
-        unsigned int usados = (restante < espacio) ? restante : espacio;
-        restante -= usados;
-        vpn++;
-        offset = 0;
+
+        memset(entrada_borrar, 0, sizeof(Entrada_Tabla_Archivos));
+
+        fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
+        fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
+
     }
-
-    memset(entrada_borrar, 0, sizeof(Entrada_Tabla_Archivos));
-
-    fseek(memoria_montada, inicio_tabla_PCB, SEEK_SET);
-    fwrite(TablaPCB, sizeof(Entrada_Tabla_PCB), entradas_tabla_PCB, memoria_montada);
-
 }
 
 void os_close(osrmsFile* file_desc) {
     if (file_desc != NULL) {
         free(file_desc);
+    }
+}
+
+void os_unmount() {
+    if (memoria_montada != NULL) {
+        fclose(memoria_montada);
+        memoria_montada = NULL;
+        printf("[Test Success]: (Unmount) Memoria desmontada correctamente\n");
+    } else {
+        printf("[Test error]: (Unmount) No hay memoria montada para desmontar\n");
     }
 }

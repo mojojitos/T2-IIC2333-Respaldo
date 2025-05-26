@@ -1,39 +1,63 @@
-#include <stdio.h>	// FILE, fopen, fclose, etc.
-#include <stdlib.h> // malloc, calloc, free, etc
-#include <string.h> //para strcmp
-#include <stdbool.h> // bool, true, false
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "../osms_API/osms_API.h"
 
-int main(int argc, char const *argv[])
-{
+void crear_archivo(const char* path, const char* contenido) {
+    FILE* f = fopen(path, "w");
+    if (f) {
+        fputs(contenido, f);
+        fclose(f);
+    }
+}
 
-    // montar la memoria
+int main(int argc, char const *argv[]){
     os_mount((char *)argv[1]);
+    printf("=== [TEST FRAGMENTACIÓN] ===\n");
 
-    os_ls_processes();
+    printf("[1] Fragmentando memoria con archivos pequeños...\n");
 
-    os_exists(6, "cat.jpg");
+    for (int i = 0; i < 10; i++) {
+        char nombre_archivo[64];
+        char nombre_logico[64];
+        sprintf(nombre_archivo, "tiny_%d.txt", i);
+        sprintf(nombre_logico, "file_%d.txt", i);
+        crear_archivo(nombre_archivo, "soy un filler\n");
 
-    os_ls_files(6);
+        osrmsFile* f = os_open(0, nombre_logico, 'w');
+        int escritos = os_write_file(f, nombre_archivo);
+        printf("    ↳ %s: %d bytes escritos\n", nombre_logico, escritos);
+        os_close(f);
+    }
 
-    os_frame_bitmap();
+    printf("[2] Generando archivo grande para forzar fragmentación...\n");
 
-    os_start_process(3, "neo_proceso");
+    FILE* g = fopen("grande.txt", "w");
+    for (int i = 0; i < 100; i++) {
+        fprintf(g, "Línea larga #%d: este contenido llenará muchas páginas.\n", i);
+    }
+    fclose(g);
 
-    os_rename_process(3, "test_ren");
+    osrmsFile* big = os_open(0, "fragmentado.txt", 'w');
+    int bytes_escritos = os_write_file(big, "grande.txt");
+    printf("    ↳ Se escribieron %d bytes en 'fragmentado.txt'\n", bytes_escritos);
 
-    os_ls_processes();
 
-    os_frame_bitmap();
+    printf("[3] Leyendo archivo fragmentado desde memoria...\n");
+    os_read_file(big, "copia_fragmentada.txt");
+    os_close(big);
 
-    os_finish_process(6);
 
-    os_ls_processes();
+    printf("[4] Comparando archivo copiado con original...\n");
+    int cmp = system("diff grande.txt copia_fragmentada.txt");
+    if (cmp == 0)
+        printf("Archivos son idénticos.\n");
+    else
+        printf("Archivos son distintos.\n");
 
-    os_frame_bitmap();
+    printf("[5] Bitmap de frames (se esperaría que haya huecos):\n");
+   
 
-    //liberar_frame_bitmap(65520);
-    //print_bitmap_completo();
-    //os_frame_bitmap();
-
+    printf("=== [FIN TEST FRAGMENTACIÓN] ===\n");
+    return 0;
 }
