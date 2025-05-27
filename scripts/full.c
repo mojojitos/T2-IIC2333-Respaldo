@@ -11,6 +11,7 @@ int main(int argc, char const *argv[]){
     os_mount((char *)argv[1]);
 
     // Crear procesos
+    os_frame_bitmap();
     printf("\n== Creando procesos ==\n");
     os_start_process(1, "uno");
     os_start_process(2, "dos");
@@ -20,6 +21,11 @@ int main(int argc, char const *argv[]){
     // Renombrar proceso
     printf("\n== Renombrando proceso 2 ==\n");
     os_rename_process(2, "segundo");
+    os_ls_processes();
+
+    // Terminar proceso 3
+    printf("\n== Terminando proceso 3 ==\n");
+    os_finish_process(3);
     os_ls_processes();
 
     // Crear archivos pequeños en proceso 1

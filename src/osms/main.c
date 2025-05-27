@@ -11,6 +11,7 @@ int main(int argc, char const *argv[]){
     os_mount((char *)argv[1]);
 
     // Crear procesos
+    os_frame_bitmap();
     printf("\n== Creando procesos ==\n");
     os_start_process(1, "uno");
     os_start_process(2, "dos");

@@ -16,13 +16,13 @@ int main(int argc, char const *argv[]){
 
     osrmsFile* f1 = os_open(1, "a.mp4", 'w');
     if (!f1) { printf("Error abriendo a.mp4 para escritura\n"); return 1; }
-    int written1 = os_write_file(f1, "memoria/touched/archivos/chatarra.mp4");
+    int written1 = os_write_file(f1, "memoria/archivos/chatarra.mp4");
     printf("Proceso 1 escribió %d bytes en a.mp4\n", written1);
     os_close(f1);
 
     osrmsFile* f2 = os_open(2, "b.mp4", 'w');
     if (!f2) { printf("Error abriendo b.mp4 para escritura\n"); return 1; }
-    int written2 = os_write_file(f2, "memoria/touched/archivos/chatarra.mp4");
+    int written2 = os_write_file(f2, "memoria/archivos/chatarra.mp4");
     printf("Proceso 2 escribió %d bytes en b.mp4\n", written2);
     os_close(f2);
 
