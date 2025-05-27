@@ -89,11 +89,11 @@ int os_exists(int process_id, char* file_name){
                 char* tabla_archivos = entrada_actual->tabla_archivos;
 
                 for(int j=0; j<10; j++){
-                    char valido = tabla_archivos[j*24];
+                    char valido = tabla_archivos[j*tamaño_entrada_archivo];
                     if(valido == 1){
                         //printf("    [Test] Archivo válido (%d) encontrado!\n", valido);
                         char nombre[15] = "";
-                        memcpy(nombre, &tabla_archivos[j*24+1], 14);
+                        memcpy(nombre, &tabla_archivos[j*tamaño_entrada_archivo+1], 14);
                         nombre[14] = '\0';        
                         //printf("    [Test] Comparo Nombre: (%s) v/s buscado: (%s)\n", nombre, file_name);
                         int condicion = strcmp(nombre, file_name);
@@ -144,10 +144,10 @@ void os_ls_files(int process_id){
                 char* tabla_archivos = proceso_encontrado->tabla_archivos;
 
                 for(int j=0; j<10; j++){
-                    char valido = tabla_archivos[j*24];
+                    char valido = tabla_archivos[j*tamaño_entrada_archivo];
                     if(valido == 1){
                         //printf("    [Test] Archivo válido (%d) encontrado!\n", valido);
-                        Entrada_Tabla_Archivos* entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[j*sizeof(Entrada_Tabla_Archivos)];
+                        Entrada_Tabla_Archivos* entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[j*tamaño_entrada_archivo];
                         int tamaño_int = leer_5Bytes_little_endian(entrada_archivo_actual->tamaño_archivo_bytes);
                         //printf("    DirV: (0x%x) Nombre: (%s), tamaño : (%d)B\n", entrada_archivo_actual->dir_virtual, entrada_archivo_actual->nombre_archivo, tamaño_int);                        
                         unsigned int mascara_VPN = 0XFFF;
@@ -526,7 +526,7 @@ int liberar_memoria_proceso(Entrada_Tabla_PCB* PCB_actual){
     for(int j=0; j<10; j++){
         char valido = tabla_archivos[j*24];
         if(valido == 1){
-            Entrada_Tabla_Archivos* entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[j*sizeof(Entrada_Tabla_Archivos)];
+            Entrada_Tabla_Archivos* entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[j*tamaño_entrada_archivo];
             //print_entrada_Archivo_valido(entrada_archivo_actual);
             //int tamaño_int = leer_5Bytes_little_endian(entrada_archivo_actual->tamaño_archivo_bytes);
             unsigned int mascara_VPN = 0XFFF;
@@ -693,7 +693,7 @@ int see_memoria_proceso(Entrada_Tabla_PCB* PCB_actual){
     for(int j=0; j<10; j++){
         char valido = tabla_archivos[j*24];
         if(valido == 1){
-            Entrada_Tabla_Archivos* entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[j*sizeof(Entrada_Tabla_Archivos)];
+            Entrada_Tabla_Archivos* entrada_archivo_actual = (Entrada_Tabla_Archivos*) &tabla_archivos[j*tamaño_entrada_archivo];
             //print_entrada_Archivo_valido(entrada_archivo_actual);
             //int tamaño_int = leer_5Bytes_little_endian(entrada_archivo_actual->tamaño_archivo_bytes);
             unsigned int mascara_VPN = 0XFFF;
@@ -880,10 +880,10 @@ osrmsFile* os_open(int process_id, char* file_name, char mode) {
                 if(entrada_actual->pid == process_id){ 
                     tabla_archivos = entrada_actual->tabla_archivos;
                     for(int ii=0; ii<10; ii++){
-                        char valido = tabla_archivos[ii*24];
+                        char valido = tabla_archivos[ii*tamaño_entrada_archivo];
                         if(valido == 1){
                             char nombre[15] = "";
-                            memcpy(nombre, &tabla_archivos[ii*24+1], 14);
+                            memcpy(nombre, &tabla_archivos[ii*tamaño_entrada_archivo+1], 14);
                             nombre[14] = '\0';
                             int nombre_correcto = strcmp(nombre, file_name);
                             if(nombre_correcto == 0){

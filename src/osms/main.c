@@ -22,6 +22,11 @@ int main(int argc, char const *argv[]){
     os_rename_process(2, "segundo");
     os_ls_processes();
 
+    // Terminar proceso 3
+    printf("\n== Terminando proceso 3 ==\n");
+    os_finish_process(3);
+    os_ls_processes();
+
     // Crear archivos pequeños en proceso 1
     printf("\n== Creando archivos pequeños en proceso 1 ==\n");
     for (int i = 0; i < 6; i++) {
